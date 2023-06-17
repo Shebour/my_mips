@@ -11,6 +11,8 @@ OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
 
+.PHONY: clean test
+
 all: $(BUILD_DIR)/$(TARGET)
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
@@ -19,9 +21,15 @@ $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
 	$(CC) $(LDLIBS) $(OBJECTS) -o $@
 
-
 $(BUILD_DIR):
 	mkdir $@
 
+test:
+	$(MAKE) -C test
+	$(MAKE) -C test/c
+
 clean:
 	rm -rf $(BUILD_DIR)
+	$(MAKE) -C test clean
+	$(MAKE) -C test/c clean distclean
+
