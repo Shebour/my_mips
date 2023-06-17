@@ -72,8 +72,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "Error closing file: %s\n", argv[1]);
     return 1;
   }
-
   init_reg();
-  memory = (int *)calloc(0xffff, sizeof(int));
   return 0;
 }
