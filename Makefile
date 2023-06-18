@@ -2,7 +2,6 @@ CC=gcc
 CFLAGS= -std=c99 -Wall -Werror -Wextra
 CFLAGS_DEBUG= -g -fsanitize=address
 TARGET= my_mips
-TARGET_DEBUG= my_mips_dbg
 BUILD_DIR= build/bin
 DEBUG_DIR= build/debug
 C_SOURCES= src/main.c \
@@ -16,11 +15,11 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 
 .PHONY: clean test release debug
 
-all: release debug
+all: release debug test
 
 release: $(BUILD_DIR)/$(TARGET)
 
-debug: $(DEBUG_DIR)/$(TARGET_DEBUG)
+debug: $(DEBUG_DIR)/$(TARGET)
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) $(C_INCLUDES) $< -o $@
@@ -31,7 +30,7 @@ $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
 $(DEBUG_DIR)/%.o: %.c Makefile | $(DEBUG_DIR)
 	$(CC) -c $(CFLAGS) $(CFLAGS_DEBUG) $(C_INCLUDES) $< -o $@
 
-$(DEBUG_DIR)/$(TARGET_DEBUG): $(OBJECTS_DEBUG) Makefile
+$(DEBUG_DIR)/$(TARGET): $(OBJECTS_DEBUG) Makefile
 	$(CC) $(LDLIBS) $(OBJECTS_DEBUG) -o $@
 
 
