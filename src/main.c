@@ -1,5 +1,3 @@
-#include "main.h"
-
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,11 +7,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "define.h"
 #include "registers.h"
-
-#define MEM_SIZE 0x10
-
-void *sp = NULL;
 
 int *init_memory(char *path)
 {
@@ -86,8 +81,6 @@ int main(int argc, char **argv)
   void *memory = init_memory(argv[1]);
   if (!memory)
     return 1;
-  sp = memory + MEM_SIZE - sizeof(uint32_t);
-  printf("sp = %p\n", sp);
 
   if (munmap(memory, MEM_SIZE) == -1)
   {
@@ -95,6 +88,10 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  init_reg();
+  struct registers *regs = init_reg(memory + MEM_SIZE - sizeof(uint32_t));
+  if (!regs)
+    return 1;
+  printf("sp = %p\n", regs->sp);
+  free(regs);
   return 0;
 }
