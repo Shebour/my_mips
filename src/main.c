@@ -11,7 +11,9 @@
 
 #include "registers.h"
 
-int *sp = NULL;
+#define MEM_SIZE 0x10
+
+void *sp = NULL;
 
 int *init_memory(char *path)
 {
@@ -28,8 +30,14 @@ int *init_memory(char *path)
     perror("Error in fstat\n");
     return NULL;
   }
+  if (st.st_size >= MEM_SIZE)
+  {
+    perror("Cannot load program in memory : not enough memory\n");
+    return NULL;
+  }
   printf("File size: %jd bytes\n", st.st_size);
-  void *memory_file = (void *)mmap(NULL, st.st_size / sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+  void *memory_file =
+      mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if (memory_file == MAP_FAILED)
   {
@@ -43,7 +51,8 @@ int *init_memory(char *path)
     return NULL;
   }
 
-  int *memory = (int *)mmap(NULL, 0xfff, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+  void *memory = mmap(NULL, MEM_SIZE, PROT_READ | PROT_WRITE,
+                      MAP_PRIVATE | MAP_ANON, -1, 0);
   if (memory == MAP_FAILED)
   {
     perror("Error mapping program memory\n");
@@ -57,9 +66,10 @@ int *init_memory(char *path)
     return NULL;
   }
 
-  for (size_t i = 0; i < (0xfff / 4); i++)
+  for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)
   {
-    printf("%p : %08x\n", memory + i, memory[i]);
+    uint32_t *value = ((uint32_t *)memory) + i;
+    printf("%p : %08x\n", memory + i * sizeof(uint32_t), *value);
   }
 
   return memory;
@@ -73,11 +83,13 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  int *memory = init_memory(argv[1]);
-  sp = memory + 0xfff - 1;
+  void *memory = init_memory(argv[1]);
+  if (!memory)
+    return 1;
+  sp = memory + MEM_SIZE - sizeof(uint32_t);
   printf("sp = %p\n", sp);
 
-  if (munmap(memory, 0xfff) == -1)
+  if (munmap(memory, MEM_SIZE) == -1)
   {
     perror("Error unmapping file\n");
     return 1;
