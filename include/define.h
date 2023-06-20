@@ -2,7 +2,7 @@
 #define DEFINE_H
 
 #define MEM_SIZE 0x1000
-#define NB_REG 28
+#define NB_REG 32
 #define R0 0
 #define AT 1
 #define V0 2
@@ -31,5 +31,9 @@
 #define T9 25
 #define K0 26
 #define K1 27
+#define GP 28
+#define SP 29
+#define S8 30
+#define RA 31
 
 #endif /* DEFINE_H */

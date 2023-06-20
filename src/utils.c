@@ -78,12 +78,9 @@ int init_global(char *path)
   {
     glob->reg[i] = 0x0;
   }
-  glob->gp = 0x0;
-  glob->ra = 0x0;
-  glob->fp = 0x0;
-  glob->pc = 0;
+  glob->pc = 0x0;
   if (!init_memory(path))
     return 0;
-  glob->sp = (uint8_t *)glob->memory + MEM_SIZE - sizeof(uint32_t);
+  glob->reg[SP] = MEM_SIZE - sizeof(uint32_t);
   return 1;
 }

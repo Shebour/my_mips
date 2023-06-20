@@ -24,10 +24,7 @@ int main(int argc, char **argv)
   if (!init_global(argv[1]))
     return 1;
 
-  printf("sp : %p\n", glob->sp);
-  printf("gp : %p\n", glob->gp);
-  printf("fp : %p\n", glob->fp);
-  printf("ra : %p\n", glob->ra);
+  printf("sp : %08x\n", glob->reg[SP]);
   printf("code size = %lu bytes\n", glob->code_size);
   /*
   for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)

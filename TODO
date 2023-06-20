@@ -1,4 +1,0 @@
-les instructions sont optimises par le compilateur, un ori en asm ne sera pas
-forcement un ori en binaire (ex: li). Il faut donc implementer toutes les
-instructions mips afin de pouvoir decoder n'importe quel binaire
-
