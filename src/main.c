@@ -8,67 +8,10 @@
 #include <unistd.h>
 
 #include "define.h"
-#include "registers.h"
+#include "instructions.h"
+#include "utils.h"
 
-int *init_memory(char *path)
-{
-  int fd = open(path, O_RDONLY);
-  if (fd < 0)
-  {
-    perror("Cannot open file\n");
-    return NULL;
-  }
-  struct stat st;
-  int ret = fstat(fd, &st);
-  if (ret < 0)
-  {
-    perror("Error in fstat\n");
-    return NULL;
-  }
-  if (st.st_size >= MEM_SIZE)
-  {
-    perror("Cannot load program in memory : not enough memory\n");
-    return NULL;
-  }
-  printf("File size: %jd bytes\n", st.st_size);
-  void *memory_file =
-      mmap(NULL, st.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-
-  if (memory_file == MAP_FAILED)
-  {
-    perror("Error mapping file\n");
-    return NULL;
-  }
-
-  if (close(fd) < 0)
-  {
-    perror("Error closing file: %s\n");
-    return NULL;
-  }
-
-  void *memory = mmap(NULL, MEM_SIZE, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANON, -1, 0);
-  if (memory == MAP_FAILED)
-  {
-    perror("Error mapping program memory\n");
-    return NULL;
-  }
-  memory = memcpy(memory, memory_file, st.st_size);
-
-  if (munmap(memory_file, st.st_size) == -1)
-  {
-    perror("Error unmapping file\n");
-    return NULL;
-  }
-
-  for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)
-  {
-    uint32_t *value = ((uint32_t *)memory) + i;
-    printf("%p : %08x\n", memory + i * sizeof(uint32_t), *value);
-  }
-
-  return memory;
-}
+struct global *glob = NULL;
 
 int main(int argc, char **argv)
 {
@@ -78,20 +21,27 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  void *memory = init_memory(argv[1]);
-  if (!memory)
+  if (!init_global(argv[1]))
     return 1;
 
-  if (munmap(memory, MEM_SIZE) == -1)
+  printf("sp : %p\n", glob->sp);
+  printf("gp : %p\n", glob->gp);
+  printf("fp : %p\n", glob->fp);
+  printf("ra : %p\n", glob->ra);
+  printf("code size = %lu bytes\n", glob->code_size);
+  /*
+  for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)
+  {
+    uint32_t *value = ((uint32_t *) glob->memory) + i;
+    printf("%p : %08x\n", glob->memory + i * sizeof(uint32_t), *value);
+  }*/
+  parse_inst();
+
+  if (munmap(glob->memory, MEM_SIZE) == -1)
   {
     perror("Error unmapping file\n");
     return 1;
   }
-
-  struct registers *regs = init_reg(memory + MEM_SIZE - sizeof(uint32_t));
-  if (!regs)
-    return 1;
-  printf("sp = %p\n", regs->sp);
-  free(regs);
+  free(glob);
   return 0;
 }
