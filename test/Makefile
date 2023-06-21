@@ -4,7 +4,7 @@ AS		= mipsel-elf-as
 LD		= mipsel-elf-ld
 COPY		= mipsel-elf-objcopy
 
-ASFLAGS		= -mips1 -msoft-float --em=mipslelf
+ASFLAGS		= -mips32 -msoft-float --em=mipslelf
 LDFLAGS		= -T c/program.lds --build-id=none -EL
 COPYFLAGS	= -O binary --only-section=.text
 

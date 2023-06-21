@@ -7,15 +7,20 @@
 
 extern struct global *glob;
 
-void parse_register(uint32_t *instruction)
+void pc_step(int step)
+{
+  glob->pc += step;
+}
+
+void exec_register(uint32_t *instruction)
 {
   uint32_t function = (*instruction) << 26;
   function = function >> 26;
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t rd = ((*instruction) >> 11) & 0x1F;
-  uint32_t sa = ((*instruction) >> 6) & 0x1F;
-  if (rd == 0x0)
+  // uint32_t sa = ((*instruction) >> 6) & 0x1F;
+  if (rd == 0x0 && function != JR && function != JALR)
   {
     perror("Cannot overwrite R0\n");
     return;
@@ -24,26 +29,33 @@ void parse_register(uint32_t *instruction)
   {
   case ADD:
     glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
+    pc_step(4);
     break;
   case ADDU:
     glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
+    pc_step(4);
     break;
   case AND:
     glob->reg[rd] = glob->reg[rs] & glob->reg[rt];
+    pc_step(4);
     break;
   case DIV:
   case DIVU:
   case MULT:
     glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
+    pc_step(4);
     break;
   case MULTU:
     glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
+    pc_step(4);
     break;
   case NOR:
     glob->reg[rd] = ~(glob->reg[rs] | glob->reg[rt]);
+    pc_step(4);
     break;
   case OR:
     glob->reg[rd] = glob->reg[rs] | glob->reg[rt];
+    pc_step(4);
     break;
   case SLL:
   case SLLV:
@@ -55,6 +67,7 @@ void parse_register(uint32_t *instruction)
   case SUBU:
   case XOR:
     glob->reg[rd] = glob->reg[rs] ^ glob->reg[rt];
+    pc_step(4);
     break;
   case SLT:
   case SLTU:
@@ -72,7 +85,7 @@ void parse_register(uint32_t *instruction)
   }
 }
 
-void parse_immediate(uint32_t *instruction)
+void exec_immediate(uint32_t *instruction)
 {
   uint8_t opcode = (*instruction) >> 26;
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
@@ -88,6 +101,7 @@ void parse_immediate(uint32_t *instruction)
     break;
   case ORI:
     glob->reg[rt] = glob->reg[rs] | imm;
+    pc_step(4);
     break;
   case XORI:
     break;
@@ -127,7 +141,7 @@ void parse_immediate(uint32_t *instruction)
     perror("Bad immediate instruction\n");
   }
 }
-void parse_jump(uint32_t *instruction)
+void exec_jump(uint32_t *instruction)
 {
   uint8_t opcode = (*instruction) >> 26;
   uint32_t rs = (*instruction) & 0x3FFFFFF;
@@ -137,8 +151,8 @@ void parse_jump(uint32_t *instruction)
     glob->pc = (glob->pc & 0xF0000000) | (rs << 2);
     break;
   case JAL:
-    glob->pc = (glob->pc & 0xF0000000) | (rs << 2);
     glob->reg[RA] = glob->pc + 4;
+    glob->pc = (glob->pc & 0xF0000000) | (rs << 2);
     break;
   case TRAP:
     break;
@@ -148,26 +162,64 @@ void parse_jump(uint32_t *instruction)
   }
 }
 
-void parse_inst()
+int branch_or_jump(uint32_t *instruction)
 {
-  for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)
+  uint8_t opcode = (*instruction) >> 26;
+  uint32_t function = (*instruction) << 26;
+  function = function >> 26;
+  if (opcode == J || opcode == JAL)
+    return 1;
+  if (opcode == BEQ || opcode == BNE || opcode == BGTZ || opcode == BLEZ)
+    return 1;
+  if (opcode == 0)
   {
-    uint32_t *instru = ((uint32_t *)glob->memory) + i;
-    printf("%lx : %08x\n", i * sizeof(uint32_t), *instru);
-    if (*instru == 0 || *instru == 0xa)
-      continue;
-    if (*instru == 0xc)
-    {
-      if (call_syscall())
-        return;
-      continue;
-    }
-    uint8_t opcode = (*instru) >> 26;
-    if (opcode == 0)
-      parse_register(instru);
-    else if (opcode == J || opcode == JAL || opcode == TRAP)
-      parse_jump(instru);
-    else
-      parse_immediate(instru);
+    if (function == JR || function == JALR)
+      return 1;
+  }
+  return 0;
+}
+
+int exec_inst(uint32_t *instru)
+{
+  if (*instru == 0 || *instru == 0xa)
+  {
+    pc_step(4);
+    return 0;
+  }
+  if (branch_or_jump(instru))
+  {
+    uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
+    printf("next: %x : %08x\n", glob->pc + 4, *next_instru);
+    exec_inst(next_instru);
+    exec_inst(instru);
+    return 0;
+  }
+  if (*instru == 0xc)
+  {
+    if (call_syscall())
+      return 1;
+    pc_step(4);
+    return 0;
+  }
+
+  uint8_t opcode = (*instru) >> 26;
+  if (opcode == 0)
+    exec_register(instru);
+  else if (opcode == J || opcode == JAL || opcode == TRAP)
+    exec_jump(instru);
+  else
+    exec_immediate(instru);
+
+  return 0;
+}
+
+void execute()
+{
+  while (1)
+  {
+    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+    printf("%x : %08x\n", glob->pc, *instru);
+    if (exec_inst(instru))
+      return;
   }
 }

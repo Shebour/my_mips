@@ -60,9 +60,6 @@
 #define JAL 0x3
 #define TRAP 0x1a
 
-void parse_register(uint32_t *instruction);
-void parse_immediate(uint32_t *instruction);
-void parse_jump(uint32_t *instruction);
-void parse_inst();
+void execute();
 
 #endif /* INSTRUCTIONS_H */

@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     uint32_t *value = ((uint32_t *) glob->memory) + i;
     printf("%p : %08x\n", glob->memory + i * sizeof(uint32_t), *value);
   }*/
-  parse_inst();
+  execute();
 
   if (munmap(glob->memory, MEM_SIZE) == -1)
   {
