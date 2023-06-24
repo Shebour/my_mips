@@ -131,6 +131,8 @@ void exec_immediate(uint32_t *instruction)
     break;
   case LW:
     break;
+  case LUI:
+    glob->reg[rt] = imm;
   case SB:
     break;
   case SH:
@@ -170,11 +172,11 @@ int branch_or_jump(uint32_t *instruction)
   if (opcode == J || opcode == JAL)
     return 1;
   if (opcode == BEQ || opcode == BNE || opcode == BGTZ || opcode == BLEZ)
-    return 1;
+    return 2;
   if (opcode == 0)
   {
     if (function == JR || function == JALR)
-      return 1;
+      return 3;
   }
   return 0;
 }
@@ -186,12 +188,19 @@ int exec_inst(uint32_t *instru)
     pc_step(4);
     return 0;
   }
-  if (branch_or_jump(instru))
+  int b_or_j = branch_or_jump(instru);
+  if (b_or_j)
   {
     uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
-    printf("next: %x : %08x\n", glob->pc + 4, *next_instru);
+    // printf("next: %x : %08x\n", glob->pc + 4, *next_instru);
     exec_inst(next_instru);
-    exec_inst(instru);
+    if (b_or_j == 1)
+      exec_jump(instru);
+    if (b_or_j == 2)
+      exec_immediate(instru);
+    if (b_or_j == 3)
+      exec_register(instru);
+    // exec_inst(instru);
     return 0;
   }
   if (*instru == 0xc)
@@ -218,7 +227,7 @@ void execute()
   while (1)
   {
     uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-    printf("%x : %08x\n", glob->pc, *instru);
+    // printf("%x : %08x\n", glob->pc, *instru);
     if (exec_inst(instru))
       return;
   }

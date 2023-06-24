@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "utils.h"
@@ -10,7 +11,7 @@ extern struct global *glob;
 
 void print_int()
 {
-  printf("%u", glob->reg[A0]);
+  printf("%u\n", glob->reg[A0]);
 }
 
 void print_string()
@@ -23,6 +24,7 @@ void read_int()
 {
   int value = 0;
   scanf("%d", &value);
+  printf("%d\n", value);
   glob->reg[V0] = value;
 }
 
@@ -35,6 +37,9 @@ void read_string()
     perror("Fail reading string\n");
     return;
   }
+  char *value = ((char *)glob->memory) + glob->reg[A0];
+  strncpy(value, buf, glob->reg[A1]);
+  free(buf);
 }
 
 int call_syscall()

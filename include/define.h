@@ -1,7 +1,7 @@
 #ifndef DEFINE_H
 #define DEFINE_H
 
-#define MEM_SIZE 0x1000
+#define MEM_SIZE 0x01000000
 #define NB_REG 32
 #define R0 0
 #define AT 1

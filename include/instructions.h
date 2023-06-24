@@ -54,6 +54,7 @@
 #define SB 0x28
 #define SH 0x29
 #define SW 0x2b
+#define LUI 0xf
 
 // Jump encoding
 #define J 0x2
