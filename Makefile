@@ -7,7 +7,8 @@ DEBUG_DIR= build/debug
 C_SOURCES= src/main.c \
 					 src/utils.c \
 					 src/syscalls.c \
-					 src/instructions.c
+					 src/instructions.c \
+					 src/logger.c
 
 C_INCLUDES= -Iinclude
 LDLIBS= -lasan

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "logger.h"
 #include "syscalls.h"
 #include "utils.h"
 
@@ -20,6 +21,8 @@ void exec_register(uint32_t *instruction)
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t rd = ((*instruction) >> 11) & 0x1F;
   // uint32_t sa = ((*instruction) >> 6) & 0x1F;
+  if (glob->debug)
+    log_reg_instr(instruction);
   if (rd == 0x0 && function != JR && function != JALR)
   {
     perror("Cannot overwrite R0\n");
@@ -91,6 +94,8 @@ void exec_immediate(uint32_t *instruction)
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t imm = (*instruction) & 0xFFFF;
+  if (glob->debug)
+    log_imm_instr(instruction);
   switch (opcode)
   {
   case ADDI:
@@ -108,10 +113,6 @@ void exec_immediate(uint32_t *instruction)
   case SLTI:
     break;
   case SLTIU:
-    break;
-  case LHI:
-    break;
-  case LLO:
     break;
   case BEQ:
     break;
@@ -132,7 +133,8 @@ void exec_immediate(uint32_t *instruction)
   case LW:
     break;
   case LUI:
-    glob->reg[rt] = imm;
+    glob->reg[rt] = imm << 16;
+    pc_step(4);
   case SB:
     break;
   case SH:
@@ -183,6 +185,8 @@ int branch_or_jump(uint32_t *instruction)
 
 int exec_inst(uint32_t *instru)
 {
+  if (glob->debug)
+  {}
   if (*instru == 0 || *instru == 0xa)
   {
     pc_step(4);
@@ -192,7 +196,6 @@ int exec_inst(uint32_t *instru)
   if (b_or_j)
   {
     uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
-    // printf("next: %x : %08x\n", glob->pc + 4, *next_instru);
     exec_inst(next_instru);
     if (b_or_j == 1)
       exec_jump(instru);
@@ -200,7 +203,6 @@ int exec_inst(uint32_t *instru)
       exec_immediate(instru);
     if (b_or_j == 3)
       exec_register(instru);
-    // exec_inst(instru);
     return 0;
   }
   if (*instru == 0xc)
@@ -227,7 +229,6 @@ void execute()
   while (1)
   {
     uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-    // printf("%x : %08x\n", glob->pc, *instru);
     if (exec_inst(instru))
       return;
   }

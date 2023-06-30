@@ -67,7 +67,7 @@ int init_memory(char *path)
   return 1;
 }
 
-int init_global(char *path)
+int init_global(int argc, char **argv)
 {
   glob = malloc(sizeof(struct global));
 
@@ -78,8 +78,26 @@ int init_global(char *path)
   {
     glob->reg[i] = 0x0;
   }
+  glob->hi = 0x0;
+  glob->lo = 0x0;
+
+  glob->debug = 0;
+  for (int i = 0; i < argc; i++)
+  {
+    if (argv[i][0] == '-' && (argv[i][1] != '-' || argv[i][1] != ' '))
+    {
+      switch (argv[i][1])
+      {
+      case 'd':
+        glob->debug = 1;
+        break;
+      default:
+        break;
+      }
+    }
+  }
   glob->pc = 0x0;
-  if (!init_memory(path))
+  if (!init_memory(argv[argc - 1]))
     return 0;
   glob->reg[SP] = MEM_SIZE - sizeof(uint32_t);
   return 1;

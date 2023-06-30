@@ -9,12 +9,15 @@
 struct global
 {
   uint32_t reg[NB_REG];
+  uint32_t hi;
+  uint32_t lo;
   void *memory;
   uint32_t pc;
   size_t code_size;
+  int debug;
 };
 
 int init_memory(char *path);
-int init_global(char *path);
+int init_global(int argc, char **argv);
 
 #endif /* UTILS_H */

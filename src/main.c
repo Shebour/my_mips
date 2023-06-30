@@ -15,23 +15,15 @@ struct global *glob = NULL;
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
+  if (argc < 2)
   {
-    fprintf(stderr, "Usage: %s <path to MIPS executable>\n", argv[0]);
+    fprintf(stderr, "Usage: %s [-d] <path to MIPS executable>\n", argv[0]);
     return 1;
   }
 
-  if (!init_global(argv[1]))
+  if (!init_global(argc - 1, argv + 1))
     return 1;
 
-  // printf("sp : %08x\n", glob->reg[SP]);
-  // printf("code size = %lu bytes\n", glob->code_size);
-  /*
-  for (size_t i = 0; i < (MEM_SIZE / sizeof(uint32_t)); i++)
-  {
-    uint32_t *value = ((uint32_t *) glob->memory) + i;
-    printf("%p : %08x\n", glob->memory + i * sizeof(uint32_t), *value);
-  }*/
   execute();
 
   if (munmap(glob->memory, MEM_SIZE) == -1)
