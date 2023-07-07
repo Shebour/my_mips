@@ -20,7 +20,7 @@ void exec_register(uint32_t *instruction)
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t rd = ((*instruction) >> 11) & 0x1F;
-  // uint32_t sa = ((*instruction) >> 6) & 0x1F;
+  uint32_t sa = ((*instruction) >> 6) & 0x1F;
   if (glob->debug)
     log_reg_instr(instruction);
   if (rd == 0x0 && function != JR && function != JALR)
@@ -43,7 +43,17 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case DIV:
+		glob->hi = glob->reg[rs] % glob->reg[rt];
+		glob->lo = glob->reg[rs] / glob->reg[rt];
+		glob->reg[rd] = glob->lo;
+		pc_step(4);
+		break;
   case DIVU:
+		glob->hi = glob->reg[rs] % glob->reg[rt];
+		glob->lo = glob->reg[rs] / glob->reg[rt];
+		glob->reg[rd] = glob->lo;
+		pc_step(4);
+		break;
   case MULT:
     glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
     pc_step(4);
@@ -61,11 +71,25 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SLL:
+		glob->reg[rd] = glob->reg[rt] << sa;
+		pc_step(4);
+		break;
   case SLLV:
+		glob->reg[rd] = glob->reg[rt] << (glob->reg[rs] & 0x1F);
+		pc_step(4);
+		break;
   case SRA:
+		break;
   case SRAV:
+		break;
   case SRL:
+		glob->reg[rd] = glob->reg[rt] >> sa;
+		pc_step(4);
+		break;
   case SRLV:
+		glob->reg[rd] = glob->reg[rt] >> (glob->reg[rs] & 0x1F);
+		pc_step(4);
+		break;
   case SUB:
   case SUBU:
   case XOR:
@@ -224,7 +248,7 @@ int exec_inst(uint32_t *instru)
   return 0;
 }
 
-void execute()
+void execute(void)
 {
   while (1)
   {
