@@ -43,17 +43,17 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case DIV:
-		glob->hi = glob->reg[rs] % glob->reg[rt];
-		glob->lo = glob->reg[rs] / glob->reg[rt];
-		glob->reg[rd] = glob->lo;
-		pc_step(4);
-		break;
+    glob->hi = glob->reg[rs] % glob->reg[rt];
+    glob->lo = glob->reg[rs] / glob->reg[rt];
+    glob->reg[rd] = glob->lo;
+    pc_step(4);
+    break;
   case DIVU:
-		glob->hi = glob->reg[rs] % glob->reg[rt];
-		glob->lo = glob->reg[rs] / glob->reg[rt];
-		glob->reg[rd] = glob->lo;
-		pc_step(4);
-		break;
+    glob->hi = glob->reg[rs] % glob->reg[rt];
+    glob->lo = glob->reg[rs] / glob->reg[rt];
+    glob->reg[rd] = glob->lo;
+    pc_step(4);
+    break;
   case MULT:
     glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
     pc_step(4);
@@ -71,25 +71,25 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SLL:
-		glob->reg[rd] = glob->reg[rt] << sa;
-		pc_step(4);
-		break;
+    glob->reg[rd] = glob->reg[rt] << sa;
+    pc_step(4);
+    break;
   case SLLV:
-		glob->reg[rd] = glob->reg[rt] << (glob->reg[rs] & 0x1F);
-		pc_step(4);
-		break;
+    glob->reg[rd] = glob->reg[rt] << (glob->reg[rs] & 0x1F);
+    pc_step(4);
+    break;
   case SRA:
-		break;
+    break;
   case SRAV:
-		break;
+    break;
   case SRL:
-		glob->reg[rd] = glob->reg[rt] >> sa;
-		pc_step(4);
-		break;
+    glob->reg[rd] = glob->reg[rt] >> sa;
+    pc_step(4);
+    break;
   case SRLV:
-		glob->reg[rd] = glob->reg[rt] >> (glob->reg[rs] & 0x1F);
-		pc_step(4);
-		break;
+    glob->reg[rd] = glob->reg[rt] >> (glob->reg[rs] & 0x1F);
+    pc_step(4);
+    break;
   case SUB:
   case SUBU:
   case XOR:
