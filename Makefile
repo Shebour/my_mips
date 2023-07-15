@@ -1,17 +1,18 @@
 CC=gcc
 CFLAGS= -std=c99 -Wall -Wextra -pedantic
-CFLAGS_DEBUG= -g -fsanitize=address
+CFLAGS_DEBUG= -g
 TARGET= my_mips
 BUILD_DIR= build/bin
 DEBUG_DIR= build/debug
 C_SOURCES= src/main.c \
+					 src/functions.c \
 					 src/utils.c \
 					 src/syscalls.c \
 					 src/instructions.c \
 					 src/logger.c
 
 C_INCLUDES= -Iinclude
-LDLIBS= -lasan
+#LDLIBS= -lasan
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))

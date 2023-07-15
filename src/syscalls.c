@@ -11,7 +11,7 @@ extern struct global *glob;
 
 void print_int()
 {
-  printf("%u\n", glob->reg[A0]);
+  printf("%d\n", (int32_t)glob->reg[A0]);
 }
 
 void print_string()

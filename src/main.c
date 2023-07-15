@@ -26,11 +26,6 @@ int main(int argc, char **argv)
 
   execute();
 
-  if (munmap(glob->memory, MEM_SIZE) == -1)
-  {
-    perror("Error unmapping file\n");
-    return 1;
-  }
-  free(glob);
+  clean_exit();
   return 0;
 }

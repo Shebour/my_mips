@@ -1,5 +1,6 @@
 #include "instructions.h"
 
+#include <functions.h>
 #include <stdio.h>
 
 #include "logger.h"
@@ -31,7 +32,8 @@ void exec_register(uint32_t *instruction)
   switch (function)
   {
   case ADD:
-    glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
+    add(rs, rt, rd);
+    // glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
     pc_step(4);
     break;
   case ADDU:
@@ -91,6 +93,9 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SUB:
+    glob->reg[rd] = glob->reg[rs] - glob->reg[rt];
+    pc_step(4);
+    break;
   case SUBU:
   case XOR:
     glob->reg[rd] = glob->reg[rs] ^ glob->reg[rt];

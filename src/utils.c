@@ -25,11 +25,19 @@ int init_memory(char *path)
   if (ret < 0)
   {
     perror("Error in fstat\n");
+    if (close(fd) < 0)
+    {
+      perror("Error closing file: %s\n");
+    }
     return 0;
   }
   if (st.st_size >= MEM_SIZE)
   {
     perror("Cannot load program in memory : not enough memory\n");
+    if (close(fd) < 0)
+    {
+      perror("Error closing file: %s\n");
+    }
     return 0;
   }
   void *memory_file =
@@ -38,6 +46,10 @@ int init_memory(char *path)
   if (memory_file == MAP_FAILED)
   {
     perror("Error mapping file\n");
+    if (close(fd) < 0)
+    {
+      perror("Error closing file: %s\n");
+    }
     return 0;
   }
 
@@ -52,6 +64,10 @@ int init_memory(char *path)
   if (memory == MAP_FAILED)
   {
     perror("Error mapping program memory\n");
+    if (munmap(memory_file, st.st_size) == -1)
+    {
+      perror("Error unmapping file\n");
+    }
     return 0;
   }
   memory = memcpy(memory, memory_file, st.st_size);
@@ -98,7 +114,19 @@ int init_global(int argc, char **argv)
   }
   glob->pc = 0x0;
   if (!init_memory(argv[argc - 1]))
+  {
     return 0;
+  }
   glob->reg[SP] = MEM_SIZE - sizeof(uint32_t);
   return 1;
+}
+
+void clean_exit(void)
+{
+  if (munmap(glob->memory, MEM_SIZE) == -1)
+  {
+    perror("Error unmapping file\n");
+  }
+  free(glob);
+  exit(EXIT_SUCCESS);
 }

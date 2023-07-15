@@ -10,6 +10,7 @@ COPYFLAGS	= -O binary --only-section=.text
 
 SRC		= hello_world.s \
 		  add.s \
+			sub.s \
 		  lui.s \
 		  read_int.s \
 		  read_string.s
