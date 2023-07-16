@@ -33,7 +33,6 @@ void exec_register(uint32_t *instruction)
   {
   case ADD:
     add(rs, rt, rd);
-    // glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
     pc_step(4);
     break;
   case ADDU:
@@ -93,10 +92,13 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SUB:
-    glob->reg[rd] = glob->reg[rs] - glob->reg[rt];
+    sub(rs, rt, rd);
     pc_step(4);
     break;
   case SUBU:
+    glob->reg[rd] = glob->reg[rs] - glob->reg[rt];
+    pc_step(4);
+    break;
   case XOR:
     glob->reg[rd] = glob->reg[rs] ^ glob->reg[rt];
     pc_step(4);
