@@ -34,6 +34,7 @@
 #define GP 28
 #define SP 29
 #define S8 30
+#define FP 30
 #define RA 31
 
 #endif /* DEFINE_H */

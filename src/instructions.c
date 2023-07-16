@@ -36,7 +36,7 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case ADDU:
-    glob->reg[rd] = glob->reg[rs] + glob->reg[rt];
+    addu(rs, rt, rd);
     pc_step(4);
     break;
   case AND:
@@ -44,23 +44,19 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case DIV:
-    glob->hi = glob->reg[rs] % glob->reg[rt];
-    glob->lo = glob->reg[rs] / glob->reg[rt];
-    glob->reg[rd] = glob->lo;
+    div(rs, rt);
     pc_step(4);
     break;
   case DIVU:
-    glob->hi = glob->reg[rs] % glob->reg[rt];
-    glob->lo = glob->reg[rs] / glob->reg[rt];
-    glob->reg[rd] = glob->lo;
+    divu(rs, rt);
     pc_step(4);
     break;
   case MULT:
-    glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
+    mult(rs, rt);
     pc_step(4);
     break;
   case MULTU:
-    glob->reg[rd] = glob->reg[rs] * glob->reg[rt];
+    multu(rs, rt);
     pc_step(4);
     break;
   case NOR:
@@ -96,7 +92,7 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SUBU:
-    glob->reg[rd] = glob->reg[rs] - glob->reg[rt];
+    subu(rs, rt, rd);
     pc_step(4);
     break;
   case XOR:
@@ -104,7 +100,13 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SLT:
+    slt(rs, rt, rd);
+    pc_step(4);
+    break;
   case SLTU:
+    sltu(rs, rt, rd);
+    pc_step(4);
+    break;
   case JALR:
   case JR:
     glob->pc = glob->reg[rs];

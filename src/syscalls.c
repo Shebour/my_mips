@@ -57,18 +57,19 @@ void read_char(void)
 
 void _open(void)
 {
-  glob->reg[V0] = open((char *) glob->memory + glob->reg[A0], glob->reg[A1]);
+  glob->reg[V0] = open((char *)glob->memory + glob->reg[A0], glob->reg[A1]);
 }
 
 void _read(void)
 {
-  glob->reg[V0] = read(glob->reg[A0], (char *) glob->memory + glob->reg[A1], glob->reg[A2]);
+  glob->reg[V0] =
+      read(glob->reg[A0], (char *)glob->memory + glob->reg[A1], glob->reg[A2]);
 }
-
 
 void _write(void)
 {
-  glob->reg[V0] = write(glob->reg[A0], (char *) glob->memory + glob->reg[A1], glob->reg[A2]);
+  glob->reg[V0] =
+      write(glob->reg[A0], (char *)glob->memory + glob->reg[A1], glob->reg[A2]);
 }
 
 void _close(void)
