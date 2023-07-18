@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -std=c99 -Wall -Wextra -pedantic
+CFLAGS= -std=c99 -Wall -Wextra -pedantic --coverage
 CFLAGS_DEBUG= -g
 TARGET= my_mips
 BUILD_DIR= build/bin
@@ -12,7 +12,7 @@ C_SOURCES= src/main.c \
 					 src/logger.c
 
 C_INCLUDES= -Iinclude
-#LDLIBS= -lasan
+LDLIBS= --coverage
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
@@ -26,11 +26,15 @@ release: $(BUILD_DIR)/$(TARGET)
 
 debug: $(DEBUG_DIR)/$(TARGET)
 
+coverage: CFLAGS += --coverage
+coverage: LDLIBS += --coverage
+coverage: release
+
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) -c $(CFLAGS) $(C_INCLUDES) $< -o $@
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) -o $@
+	$(CC) $(LDLIBS) $(OBJECTS) -o $@
 
 $(DEBUG_DIR)/%.o: %.c Makefile | $(DEBUG_DIR)
 	$(CC) -c $(CFLAGS) $(CFLAGS_DEBUG) $(C_INCLUDES) $< -o $@
@@ -50,7 +54,7 @@ test:
 	$(MAKE) -C test/c
 
 clean:
-	rm -rf build
+	rm -rf build *.gcov
 	$(MAKE) -C test clean
 	$(MAKE) -C test/c clean distclean
 

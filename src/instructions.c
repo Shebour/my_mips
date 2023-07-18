@@ -168,6 +168,7 @@ void exec_immediate(uint32_t *instruction)
   case LUI:
     glob->reg[rt] = imm << 16;
     pc_step(4);
+    break;
   case SB:
     break;
   case SH:

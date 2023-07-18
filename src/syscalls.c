@@ -12,7 +12,7 @@ extern struct global *glob;
 
 void print_int(void)
 {
-  printf("%d\n", (int32_t)glob->reg[A0]);
+  printf("%d", (int32_t)glob->reg[A0]);
 }
 
 void print_string(void)
@@ -25,7 +25,6 @@ void read_int(void)
 {
   int value = 0;
   scanf("%d", &value);
-  printf("%d\n", value);
   glob->reg[V0] = value;
 }
 
@@ -45,7 +44,7 @@ void read_string(void)
 
 void print_char(void)
 {
-  printf("%c\n", glob->reg[A0]);
+  printf("%c", glob->reg[A0]);
 }
 
 void read_char(void)

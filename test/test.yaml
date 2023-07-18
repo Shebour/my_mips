@@ -1,0 +1,11 @@
+---
+- file: "add.exe"
+  output: "102"
+- file: "hello_world.exe"
+  output: "Hello World!\n"
+- file: "lui.exe"
+  output: "65536"
+- file: "sub.exe"
+  output: "-30"
+- file: "addu.exe"
+  output: "102"
