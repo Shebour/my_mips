@@ -39,4 +39,3 @@ for test in data:
         print(f"{Fore.GREEN}OK{Fore.RESET}")
         passed += 1
 print(f"{passed}/{total}")
-
