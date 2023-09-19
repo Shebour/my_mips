@@ -76,6 +76,8 @@ void exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SRA:
+    glob->reg[rt] >>= sa;
+    glob->reg[rd] = glob->reg[rt];
     break;
   case SRAV:
     break;
