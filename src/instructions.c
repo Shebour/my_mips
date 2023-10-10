@@ -206,7 +206,7 @@ void exec_jump(uint32_t *instruction)
   }
 }
 
-int branch_or_jump(uint32_t *instruction)
+int instruction_type(uint32_t *instruction)
 {
   uint8_t opcode = (*instruction) >> 26;
   uint32_t function = (*instruction) << 26;
@@ -233,16 +233,16 @@ int exec_inst(uint32_t *instru)
     pc_step(4);
     return 0;
   }
-  int b_or_j = branch_or_jump(instru);
-  if (b_or_j)
+  int inst_type = instruction_type(instru);
+  if (inst_type)
   {
     uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
     exec_inst(next_instru);
-    if (b_or_j == 1)
+    if (inst_type == JUMP)
       exec_jump(instru);
-    if (b_or_j == 2)
+    if (inst_type == IMM)
       exec_immediate(instru);
-    if (b_or_j == 3)
+    if (inst_type == REG)
       exec_register(instru);
     return 0;
   }

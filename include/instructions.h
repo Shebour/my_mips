@@ -4,6 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+enum inst_type
+{
+  JUMP,
+  IMM,
+  REG
+};
+
 // Register encoding
 #define ADD 0x20
 #define ADDU 0x21
