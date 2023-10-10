@@ -1,4 +1,4 @@
-#include "instructions.h"
+#include "cpu.h"
 
 #include <functions.h>
 #include <stdio.h>
@@ -14,20 +14,20 @@ void pc_step(int step)
   glob->pc += step;
 }
 
-void exec_register(uint32_t *instruction)
+int exec_register(uint32_t *instruction)
 {
   uint32_t function = (*instruction) << 26;
   function = function >> 26;
-  uint8_t rs = ((*instruction) >> 21) & 0x1F;
-  uint8_t rt = ((*instruction) >> 16) & 0x1F;
-  uint8_t rd = ((*instruction) >> 11) & 0x1F;
-  uint8_t sa = ((*instruction) >> 6) & 0x1F;
+  uint32_t rs = ((*instruction) >> 21) & 0x1F;
+  uint32_t rt = ((*instruction) >> 16) & 0x1F;
+  uint32_t rd = ((*instruction) >> 11) & 0x1F;
+  uint32_t sa = ((*instruction) >> 6) & 0x1F;
   if (glob->debug)
-    log_reg_instr(instruction);
+    log_reg_instr(instruction, __FILENAME__, __LINE__);
   if (rd == 0x0 && function != JR && function != JALR)
   {
     perror("Cannot overwrite R0\n");
-    return;
+    return 1;
   }
   switch (function)
   {
@@ -78,12 +78,14 @@ void exec_register(uint32_t *instruction)
   case SRA:
     glob->reg[rt] >>= sa;
     glob->reg[rd] = glob->reg[rt];
+    pc_step(4);
     break;
   case SRAV:
     rs <<= 3;
     rs >>= 3;
     glob->reg[rt] >>= rs;
     glob->reg[rd] = glob->reg[rt];
+    pc_step(4);
     break;
   case SRL:
     glob->reg[rd] = glob->reg[rt] >> sa;
@@ -118,40 +120,64 @@ void exec_register(uint32_t *instruction)
     glob->pc = glob->reg[rs];
     break;
   case MFHI:
-  case MFLO:
-  case MTHI:
-  case MTLO:
-  default:
-    perror("Bad register instruction\n");
+    glob->reg[rd] = glob->hi;
+    pc_step(4);
     break;
+  case MFLO:
+    glob->reg[rd] = glob->lo;
+    pc_step(4);
+    break;
+  case MTHI:
+    glob->hi = glob->reg[rs];
+    pc_step(4);
+    break;
+  case MTLO:
+    glob->lo = glob->reg[rs];
+    pc_step(4);
+    break;
+  default:
+    return 1;
   }
+  return 0;
 }
 
-void exec_immediate(uint32_t *instruction)
+int exec_immediate(uint32_t *instruction)
 {
   uint8_t opcode = (*instruction) >> 26;
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t imm = (*instruction) & 0xFFFF;
   if (glob->debug)
-    log_imm_instr(instruction);
+    log_imm_instr(instruction, __FILENAME__, __LINE__);
   switch (opcode)
   {
   case ADDI:
+    addi(rs, imm, rt);
+    pc_step(4);
     break;
   case ADDIU:
+    addiu(rs, imm, rt);
+    pc_step(4);
     break;
   case ANDI:
+    glob->reg[rt] = glob->reg[rs] & imm;
+    pc_step(4);
     break;
   case ORI:
     glob->reg[rt] = glob->reg[rs] | imm;
     pc_step(4);
     break;
   case XORI:
+    glob->reg[rt] = glob->reg[rs] ^ imm;
+    pc_step(4);
     break;
   case SLTI:
+    slti(rs, imm, rt);
+    pc_step(4);
     break;
   case SLTIU:
+    sltiu(rs, imm, rt);
+    pc_step(4);
     break;
   case BEQ:
     break;
@@ -182,11 +208,16 @@ void exec_immediate(uint32_t *instruction)
   case SW:
     break;
   default:
-    perror("Bad immediate instruction\n");
+    return 1;
   }
+  return 0;
 }
-void exec_jump(uint32_t *instruction)
+int exec_jump(uint32_t *instruction)
 {
+  if (glob->debug)
+  {
+    log_jump_instr(instruction, __FILENAME__, __LINE__);
+  }
   uint8_t opcode = (*instruction) >> 26;
   uint32_t rs = (*instruction) & 0x3FFFFFF;
   switch (opcode)
@@ -201,9 +232,9 @@ void exec_jump(uint32_t *instruction)
   case TRAP:
     break;
   default:
-    perror("Bad jump instruction\n");
-    break;
+    return 1;
   }
+  return 0;
 }
 
 int instruction_type(uint32_t *instruction)
@@ -212,22 +243,19 @@ int instruction_type(uint32_t *instruction)
   uint32_t function = (*instruction) << 26;
   function = function >> 26;
   if (opcode == J || opcode == JAL)
-    return 1;
+    return JUMP;
   if (opcode == BEQ || opcode == BNE || opcode == BGTZ || opcode == BLEZ)
-    return 2;
+    return IMM;
   if (opcode == 0)
   {
     if (function == JR || function == JALR)
-      return 3;
+      return REG;
   }
   return 0;
 }
 
 int exec_inst(uint32_t *instru)
 {
-  if (glob->debug)
-  {
-  }
   if (*instru == 0 || *instru == 0xa)
   {
     pc_step(4);
@@ -248,8 +276,12 @@ int exec_inst(uint32_t *instru)
   }
   if (*instru == 0xc)
   {
+    if (glob->debug)
+    {
+      log_syscall(instru, __FILENAME__, __LINE__);
+    }
     if (call_syscall())
-      return 1;
+      return 2;
     pc_step(4);
     return 0;
   }
@@ -265,12 +297,13 @@ int exec_inst(uint32_t *instru)
   return 0;
 }
 
-void execute(void)
+int execute(void)
 {
   while (1)
   {
     uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-    if (exec_inst(instru))
-      return;
+    int ret = exec_inst(instru);
+    if (ret)
+      return ret;
   }
 }

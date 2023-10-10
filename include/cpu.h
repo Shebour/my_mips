@@ -1,5 +1,5 @@
-#ifndef INSTRUCTIONS_H
-#define INSTRUCTIONS_H
+#ifndef CPU_H
+#define CPU_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -74,6 +74,6 @@ enum inst_type
 #define JAL 0x3
 #define TRAP 0x1a
 
-void execute();
+int execute();
 
-#endif /* INSTRUCTIONS_H */
+#endif /* CPU_H */

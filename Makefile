@@ -8,7 +8,7 @@ C_SOURCES= src/main.c \
 					 src/functions.c \
 					 src/utils.c \
 					 src/syscalls.c \
-					 src/instructions.c \
+					 src/cpu.c \
 					 src/logger.c
 
 C_INCLUDES= -Iinclude

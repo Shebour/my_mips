@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 #include "define.h"
-#include "instructions.h"
+#include "cpu.h"
 #include "utils.h"
 
 struct global *glob = NULL;
@@ -27,7 +27,9 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  execute();
+  int ret = execute();
+  if (ret == 1)
+    fprintf(stderr, "Error during execution\n");
 
   clean_exit();
   return EXIT_SUCCESS;
