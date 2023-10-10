@@ -75,5 +75,7 @@ enum inst_type
 #define TRAP 0x1a
 
 int execute();
+int exec_inst(uint32_t *instru);
+int instruction_type(uint32_t *instruction);
 
 #endif /* CPU_H */

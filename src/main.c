@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "dbg.h"
 #include "define.h"
 #include "cpu.h"
 #include "utils.h"
@@ -26,7 +27,12 @@ int main(int argc, char **argv)
     free(glob);
     return 1;
   }
-
+  if (glob->debug)
+  {
+    debug();
+    clean_exit();
+    return EXIT_SUCCESS;
+  }
   int ret = execute();
   if (ret == 1)
     fprintf(stderr, "Error during execution\n");

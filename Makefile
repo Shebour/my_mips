@@ -9,7 +9,8 @@ C_SOURCES= src/main.c \
 					 src/utils.c \
 					 src/syscalls.c \
 					 src/cpu.c \
-					 src/logger.c
+					 src/logger.c \
+					 src/dbg.c
 
 C_INCLUDES= -Iinclude
 LDLIBS= --coverage
