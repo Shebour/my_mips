@@ -128,5 +128,4 @@ void clean_exit(void)
     perror("Error unmapping file\n");
   }
   free(glob);
-  exit(EXIT_SUCCESS);
 }

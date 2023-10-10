@@ -22,10 +22,13 @@ int main(int argc, char **argv)
   }
 
   if (!init_global(argc - 1, argv + 1))
+  {
+    free(glob);
     return 1;
+  }
 
   execute();
 
   clean_exit();
-  return 0;
+  return EXIT_SUCCESS;
 }

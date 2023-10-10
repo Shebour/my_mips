@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -std=c99 -Wall -Wextra -pedantic --coverage
+CFLAGS= -std=c99 -Wall -Wextra -pedantic
 CFLAGS_DEBUG= -g
 TARGET= my_mips
 BUILD_DIR= build/bin
@@ -18,7 +18,7 @@ OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
 
-.PHONY: clean test release debug
+.PHONY: clean test release debug coverage
 
 all: release debug test
 
@@ -54,7 +54,7 @@ test:
 	$(MAKE) -C test/c
 
 clean:
-	rm -rf build *.gcov
+	rm -rf build *.gcov *.html *.css
 	$(MAKE) -C test clean
 	$(MAKE) -C test/c clean distclean
 

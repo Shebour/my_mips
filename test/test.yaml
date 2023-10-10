@@ -9,3 +9,5 @@
   output: "-30"
 - file: "addu.exe"
   output: "102"
+- file: ""
+  output: ""

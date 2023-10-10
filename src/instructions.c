@@ -222,7 +222,8 @@ int branch_or_jump(uint32_t *instruction)
 int exec_inst(uint32_t *instru)
 {
   if (glob->debug)
-  {}
+  {
+  }
   if (*instru == 0 || *instru == 0xa)
   {
     pc_step(4);
