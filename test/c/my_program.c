@@ -12,7 +12,10 @@ int main(void)
 {
   int a = 0;
   int i = 6;
-
+  int j = 12;
+  j >>= 2;
+  j <<= 2;
+  print_int(j);
   a = fact(i);
   print_string("fact(");
   print_int(i);

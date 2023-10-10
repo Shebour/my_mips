@@ -18,10 +18,10 @@ void exec_register(uint32_t *instruction)
 {
   uint32_t function = (*instruction) << 26;
   function = function >> 26;
-  uint32_t rs = ((*instruction) >> 21) & 0x1F;
-  uint32_t rt = ((*instruction) >> 16) & 0x1F;
-  uint32_t rd = ((*instruction) >> 11) & 0x1F;
-  uint32_t sa = ((*instruction) >> 6) & 0x1F;
+  uint8_t rs = ((*instruction) >> 21) & 0x1F;
+  uint8_t rt = ((*instruction) >> 16) & 0x1F;
+  uint8_t rd = ((*instruction) >> 11) & 0x1F;
+  uint8_t sa = ((*instruction) >> 6) & 0x1F;
   if (glob->debug)
     log_reg_instr(instruction);
   if (rd == 0x0 && function != JR && function != JALR)
@@ -80,6 +80,10 @@ void exec_register(uint32_t *instruction)
     glob->reg[rd] = glob->reg[rt];
     break;
   case SRAV:
+    rs <<= 3;
+    rs >>= 3;
+    glob->reg[rt] >>= rs;
+    glob->reg[rd] = glob->reg[rt];
     break;
   case SRL:
     glob->reg[rd] = glob->reg[rt] >> sa;
