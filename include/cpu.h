@@ -6,7 +6,7 @@
 
 enum inst_type
 {
-  JUMP,
+  JUMP = 1,
   IMM,
   REG
 };
