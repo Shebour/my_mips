@@ -1,7 +1,6 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
-
 int call_syscall(void);
 void print_int(void);
 void print_string(void);

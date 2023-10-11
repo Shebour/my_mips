@@ -18,12 +18,10 @@ int exec_register(uint32_t *instruction)
 {
   uint32_t function = (*instruction) << 26;
   function = function >> 26;
-  uint32_t rs = ((*instruction) >> 21) & 0x1F;
-  uint32_t rt = ((*instruction) >> 16) & 0x1F;
-  uint32_t rd = ((*instruction) >> 11) & 0x1F;
-  uint32_t sa = ((*instruction) >> 6) & 0x1F;
-  if (glob->debug)
-    log_reg_instr(instruction, __FILENAME__, __LINE__);
+  uint8_t rs = ((*instruction) >> 21) & 0x1F;
+  uint8_t rt = ((*instruction) >> 16) & 0x1F;
+  uint8_t rd = ((*instruction) >> 11) & 0x1F;
+  uint8_t sa = ((*instruction) >> 6) & 0x1F;
   if (rd == 0x0 && function != JR && function != JALR)
   {
     perror("Cannot overwrite R0\n");
@@ -147,8 +145,6 @@ int exec_immediate(uint32_t *instruction)
   uint32_t rs = ((*instruction) >> 21) & 0x1F;
   uint32_t rt = ((*instruction) >> 16) & 0x1F;
   uint32_t imm = (*instruction) & 0xFFFF;
-  if (glob->debug)
-    log_imm_instr(instruction, __FILENAME__, __LINE__);
   switch (opcode)
   {
   case ADDI:
@@ -214,10 +210,6 @@ int exec_immediate(uint32_t *instruction)
 }
 int exec_jump(uint32_t *instruction)
 {
-  if (glob->debug)
-  {
-    log_jump_instr(instruction, __FILENAME__, __LINE__);
-  }
   uint8_t opcode = (*instruction) >> 26;
   uint32_t rs = (*instruction) & 0x3FFFFFF;
   switch (opcode)
@@ -261,6 +253,10 @@ int exec_inst(uint32_t *instru)
     pc_step(4);
     return 0;
   }
+  if (glob->debug)
+  {
+    log_instr(instru, __FILENAME__, __LINE__);
+  }
   int inst_type = instruction_type(instru);
   if (inst_type)
   {
@@ -276,10 +272,6 @@ int exec_inst(uint32_t *instru)
   }
   if (*instru == 0xc)
   {
-    if (glob->debug)
-    {
-      log_syscall(instru, __FILENAME__, __LINE__);
-    }
     if (call_syscall())
       return 2;
     pc_step(4);

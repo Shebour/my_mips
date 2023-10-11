@@ -15,7 +15,8 @@ void log_reg_instr(uint32_t *instru, char *filename, int line)
   uint32_t rt = ((*instru) >> 16) & 0x1F;
   uint32_t rd = ((*instru) >> 11) & 0x1F;
   uint32_t sa = ((*instru) >> 6) & 0x1F;
-  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc, *instru);
+  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc,
+          *instru);
   switch (function)
   {
   case ADD:
@@ -109,7 +110,8 @@ void log_imm_instr(uint32_t *instru, char *filename, int line)
   uint32_t rs = ((*instru) >> 21) & 0x1F;
   uint32_t rt = ((*instru) >> 16) & 0x1F;
   uint32_t imm = (*instru) & 0xFFFF;
-  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc, *instru);
+  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc,
+          *instru);
   if (opcode == 1)
   {
     switch (rt)
@@ -213,24 +215,39 @@ void log_jump_instr(uint32_t *instru, char *filename, int line)
   uint8_t opcode = (*instru) >> 26;
   uint32_t rs = (*instru) & 0x3FFFFFF;
 
-  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc, *instru);
+  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: ", glob->pc,
+          *instru);
   switch (opcode)
   {
-    case J:
-      fprintf(stderr, "j 0x%x", rs << 2);
-      break;
-    case JAL:
-      fprintf(stderr, "jal 0x%x", rs << 2);
-      break;
-    case TRAP:
-      break;
-    default:
-      fprintf(stderr, "Bad jump instruction");
+  case J:
+    fprintf(stderr, "j 0x%x", rs << 2);
+    break;
+  case JAL:
+    fprintf(stderr, "jal 0x%x", rs << 2);
+    break;
+  case TRAP:
+    break;
+  default:
+    fprintf(stderr, "Bad jump instruction");
   }
   fprintf(stderr, " (%s:%d)\n", filename, line);
 }
 
 void log_syscall(uint32_t *instru, char *filename, int line)
 {
-  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: syscall (%s:%d)\n", glob->pc, *instru, filename, line);
+  fprintf(stderr, "[my_mips] Executing pc = 0x%08x: 0x%08x: syscall (%s:%d)\n",
+          glob->pc, *instru, filename, line);
+}
+
+void log_instr(uint32_t *instru, char *filename, int line)
+{
+  uint8_t opcode = (*instru) >> 26;
+  if (*instru == 0xc)
+    log_syscall(instru, filename, line);
+  else if (opcode == 0)
+    log_reg_instr(instru, filename, line);
+  else if (opcode == J || opcode == JAL || opcode == TRAP)
+    log_jump_instr(instru, filename, line);
+  else
+    log_imm_instr(instru, filename, line);
 }

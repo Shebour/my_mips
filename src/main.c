@@ -7,9 +7,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "cpu.h"
 #include "dbg.h"
 #include "define.h"
-#include "cpu.h"
 #include "utils.h"
 
 struct global *glob = NULL;

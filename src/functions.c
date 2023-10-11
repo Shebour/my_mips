@@ -159,4 +159,3 @@ void sltiu(uint32_t rs, uint32_t imm, uint32_t rt)
   else
     glob->reg[rt] = 0;
 }
-
