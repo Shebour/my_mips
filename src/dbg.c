@@ -66,11 +66,51 @@ int parse_cmd(struct vec *line)
 int get_arg(char *data)
 {
   int i = 0;
-  while (data[i] != ' ')
+  while (data[i] != 0)
   {
+    if (data[i] == ' ')
+      return i;
     i++;
   }
-  return i+1;
+  return -1;
+}
+
+void help_debug(void)
+{
+  fprintf(stderr, "--------------------\n");
+  fprintf(stderr, "registers          | print registers\n");
+  fprintf(
+      stderr,
+      "print <pc_address> | print instruction at specified pc_address\n");
+  fprintf(stderr, "break <pc_address> | set breakpoint\n");
+  fprintf(stderr, "continue           | run until breakpoint or end\n");
+  fprintf(stderr, "exit               | exit program\n");
+  fprintf(stderr, "step               | execute next instruction\n");
+  fprintf(stderr,
+      "start              | set breakpoint at first instruction and "
+      "start program\n");
+  fprintf(stderr, "--------------------\n");
+}
+
+int start_debug(void)
+{
+  if (glob->pc != 0)
+  {
+    fprintf(stderr, "Do you want to restart the program ? [y/N] ");
+    int r = getchar();
+    if (r != 'y' && r != 'Y')
+      return 1;
+  }
+  glob->pc = 0;
+  uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+  int ret = exec_inst(instru);
+  if (ret)
+  {
+    if (ret == 1)
+      fprintf(stderr, "Error during execution\n");
+    return 0;
+  }
+  return 1;
 }
 
 void debug(void)
@@ -79,7 +119,10 @@ void debug(void)
   while (1)
   {
     if (!parse_cmd(buf))
+    {
+      vec_destroy(buf);
       break;
+    }
 
     if (!buf || !buf->data)
     {
@@ -96,15 +139,8 @@ void debug(void)
       print_registers();
     else if (!strcmp(buf->data, "start"))
     {
-      uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-      int ret = exec_inst(instru);
-      if (ret == 1)
-      {
-        fprintf(stderr, "Error during execution\n");
-        vec_destroy(buf);
-        break;
-      }
-      if (ret == 2)
+      int ret = start_debug();
+      if (!ret)
       {
         vec_destroy(buf);
         break;
@@ -114,14 +150,10 @@ void debug(void)
     {
       uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
       int ret = exec_inst(instru);
-      if (ret == 1)
+      if (ret)
       {
-        fprintf(stderr, "Error during execution\n");
-        vec_destroy(buf);
-        break;
-      }
-      if (ret == 2)
-      {
+        if (ret == 1)
+          fprintf(stderr, "Error during execution\n");
         vec_destroy(buf);
         break;
       }
@@ -138,22 +170,13 @@ void debug(void)
       strncpy(arg, buf->data + index, strlen(buf->data) - index);
       int e = 0;
       unsigned long addr = strtou32(arg, NULL, 16, &e);
+      printf("error convert to u32: %d\n", e);
       printf("0x%08lx\n", *((uint32_t *)glob->memory) + addr);
+      free(arg);
     }
     else if (!strcmp(buf->data, "help"))
     {
-      fprintf(stderr, "--------------------\n");
-      fprintf(stderr, "registers          | print registers\n");
-      fprintf(stderr,
-          "print <pc_address> | print instruction at specified pc_address\n");
-      fprintf(stderr, "break <pc_address> | set breakpoint\n");
-      fprintf(stderr, "continue           | run until breakpoint or end\n");
-      fprintf(stderr, "exit               | exit program\n");
-      fprintf(stderr, "step               | execute next instruction\n");
-      fprintf(stderr,
-          "start              | set breakpoint at first instruction and "
-          "start program\n");
-      fprintf(stderr, "--------------------\n");
+      help_debug();
     }
     vec_destroy(buf);
   }

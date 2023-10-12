@@ -134,8 +134,8 @@ void clean_exit(void)
   free(glob);
 }
 
-uint32_t strtou32(const char *__restrict nptr,
-    char **__restrict endptr, int base, int *rstatus)
+uint32_t strtou32(const char *__restrict nptr, char **__restrict endptr,
+                  int base, int *rstatus)
 {
   int serrno;
   uintmax_t im;
@@ -163,7 +163,8 @@ uint32_t strtou32(const char *__restrict nptr,
   *rstatus = errno;
   errno = serrno;
 
-  if (*rstatus == 0) {
+  if (*rstatus == 0)
+  {
     /* No digits were found */
     if (nptr == *endptr)
       *rstatus = ECANCELED;
@@ -172,12 +173,14 @@ uint32_t strtou32(const char *__restrict nptr,
       *rstatus = ENOTSUP;
   }
 
-  if (im < lo) {
+  if (im < lo)
+  {
     if (*rstatus == 0)
       *rstatus = ERANGE;
     return lo;
   }
-  if (im > hi) {
+  if (im > hi)
+  {
     if (*rstatus == 0)
       *rstatus = ERANGE;
     return hi;
@@ -185,4 +188,3 @@ uint32_t strtou32(const char *__restrict nptr,
 
   return im;
 }
-
