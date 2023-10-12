@@ -15,6 +15,7 @@ struct global
   uint32_t pc;
   size_t code_size;
   int debug;
+  int log;
 };
 
 int init_memory(char *path);

@@ -114,6 +114,9 @@ int exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case JALR:
+    glob->reg[rd] = glob->pc + 4;
+    glob->pc = glob->reg[rs];
+    break;
   case JR:
     glob->pc = glob->reg[rs];
     break;
@@ -176,12 +179,38 @@ int exec_immediate(uint32_t *instruction)
     pc_step(4);
     break;
   case BEQ:
+    if (glob->reg[rs] == glob->reg[rt])
+      glob->pc += (imm << 2);
     break;
-  case BNE:
+  case BGEZ:
+    if ((int32_t)glob->reg[rs] >= 0)
+      glob->pc += (imm << 2);
+    break;
+  case BGEZAL:
+    glob->reg[RA] = glob->pc + 4;
+    if ((int32_t)glob->reg[rs] >= 0)
+      glob->pc += (imm << 2);
     break;
   case BGTZ:
+    if ((int32_t)glob->reg[rs] > 0)
+      glob->pc += (imm << 2);
     break;
   case BLEZ:
+    if ((int32_t)glob->reg[rs] <= 0)
+      glob->pc += (imm << 2);
+    break;
+  case BLTZ:
+    if ((int32_t)glob->reg[rs] < 0)
+      glob->pc += (imm << 2);
+    break;
+  case BLTZAL:
+    glob->reg[RA] = glob->pc + 4;
+    if ((int32_t)glob->reg[rs] < 0)
+      glob->pc += (imm << 2);
+    break;
+  case BNE:
+    if (glob->reg[rs] != glob->reg[rt])
+      glob->pc += (imm << 2);
     break;
   case LB:
     break;
@@ -193,15 +222,23 @@ int exec_immediate(uint32_t *instruction)
     break;
   case LW:
     break;
-  case LUI:
-    glob->reg[rt] = imm << 16;
-    pc_step(4);
+  case LWL:
+    break;
+  case LWR:
     break;
   case SB:
     break;
   case SH:
     break;
   case SW:
+    break;
+  case SWL:
+    break;
+  case SWR:
+    break;
+  case LUI:
+    glob->reg[rt] = imm << 16;
+    pc_step(4);
     break;
   default:
     return 1;
@@ -253,7 +290,7 @@ int exec_inst(uint32_t *instru)
     pc_step(4);
     return 0;
   }
-  if (glob->debug)
+  if (glob->log)
   {
     log_instr(instru, __FILENAME__, __LINE__);
   }

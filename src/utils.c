@@ -102,6 +102,7 @@ int init_global(int argc, char **argv)
   glob->lo = 0x0;
 
   glob->debug = 0;
+  glob->log = 0;
   for (int i = 0; i < argc; i++)
   {
     if (argv[i][0] == '-' && (argv[i][1] != '-' || argv[i][1] != ' '))
@@ -111,6 +112,8 @@ int init_global(int argc, char **argv)
       case 'd':
         glob->debug = 1;
         break;
+      case 'l':
+        glob->log = 1;
       default:
         break;
       }
