@@ -99,7 +99,7 @@ void interruptible_readline_setup(void)
   signal(SIGINT, sigint_handler);
 }
 
-static enum error check_interrupt()
+static enum error check_interrupt(void)
 {
   if (!interrupted)
     return NO_ERROR;

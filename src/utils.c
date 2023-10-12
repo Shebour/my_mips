@@ -1,6 +1,8 @@
 #include "utils.h"
 
+#include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -9,6 +11,8 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#define _DIAGASSERT(t)
 
 extern struct global *glob;
 
@@ -129,3 +133,56 @@ void clean_exit(void)
   }
   free(glob);
 }
+
+uint32_t strtou32(const char *__restrict nptr,
+    char **__restrict endptr, int base, int *rstatus)
+{
+  int serrno;
+  uintmax_t im;
+  char *ep;
+  int rep;
+  uint32_t lo = 0;
+  uint32_t hi = UINT32_MAX;
+
+  _DIAGASSERT(hi >= lo);
+
+  _DIAGASSERT(nptr != NULL);
+  /* endptr may be NULL */
+
+  if (endptr == NULL)
+    endptr = &ep;
+
+  if (rstatus == NULL)
+    rstatus = &rep;
+
+  serrno = errno;
+  errno = 0;
+
+  im = strtoumax(nptr, endptr, base);
+
+  *rstatus = errno;
+  errno = serrno;
+
+  if (*rstatus == 0) {
+    /* No digits were found */
+    if (nptr == *endptr)
+      *rstatus = ECANCELED;
+    /* There are further characters after number */
+    else if (**endptr != '\0')
+      *rstatus = ENOTSUP;
+  }
+
+  if (im < lo) {
+    if (*rstatus == 0)
+      *rstatus = ERANGE;
+    return lo;
+  }
+  if (im > hi) {
+    if (*rstatus == 0)
+      *rstatus = ERANGE;
+    return hi;
+  }
+
+  return im;
+}
+

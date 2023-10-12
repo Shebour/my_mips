@@ -45,7 +45,7 @@ enum error get_content(struct cstream *cs, struct vec *line)
   return NO_ERROR;
 }
 
-int parse_one_arg(struct vec *line)
+int parse_cmd(struct vec *line)
 {
   struct cstream *cs;
 
@@ -63,20 +63,35 @@ int parse_one_arg(struct vec *line)
   return 1;
 }
 
+int get_arg(char *data)
+{
+  int i = 0;
+  while (data[i] != ' ')
+  {
+    i++;
+  }
+  return i+1;
+}
+
 void debug(void)
 {
   struct vec *buf = calloc(1, sizeof(struct vec));
   while (1)
   {
-    if (!parse_one_arg(buf))
+    if (!parse_cmd(buf))
       break;
+
     if (!buf || !buf->data)
     {
       fprintf(stderr, "Error during parsing\n");
+      vec_destroy(buf);
       break;
     }
     if (strlen(buf->data) == 0)
+    {
+      vec_destroy(buf);
       break;
+    }
     if (!strcmp(buf->data, "registers"))
       print_registers();
     else if (!strcmp(buf->data, "start"))
@@ -86,10 +101,14 @@ void debug(void)
       if (ret == 1)
       {
         fprintf(stderr, "Error during execution\n");
+        vec_destroy(buf);
         break;
       }
       if (ret == 2)
+      {
+        vec_destroy(buf);
         break;
+      }
     }
     else if (!strcmp(buf->data, "step"))
     {
@@ -98,14 +117,28 @@ void debug(void)
       if (ret == 1)
       {
         fprintf(stderr, "Error during execution\n");
+        vec_destroy(buf);
         break;
       }
       if (ret == 2)
+      {
+        vec_destroy(buf);
         break;
+      }
     }
     else if (!strcmp(buf->data, "exit"))
     {
+      vec_destroy(buf);
       break;
+    }
+    else if (!strncmp(buf->data, "print", 5))
+    {
+      char *arg = calloc(100, 1);
+      int index = get_arg(buf->data);
+      strncpy(arg, buf->data + index, strlen(buf->data) - index);
+      int e = 0;
+      unsigned long addr = strtou32(arg, NULL, 16, &e);
+      printf("0x%08lx\n", *((uint32_t *)glob->memory) + addr);
     }
     else if (!strcmp(buf->data, "help"))
     {

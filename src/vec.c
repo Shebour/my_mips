@@ -12,10 +12,6 @@ void vec_init(struct vec *vec)
 void vec_destroy(struct vec *vec)
 {
   free(vec->data);
-  // this isn't strictly required, but makes debugging a lot easier:
-  // the app will crash when using a destroyed vector, instead of writing into
-  // freed memory (which may or may not crash the program, but will likely
-  // result) in the program crashing at a later time
   vec->data = NULL;
 }
 
