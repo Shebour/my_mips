@@ -82,7 +82,7 @@ void help_debug(void)
   fprintf(
       stderr,
       "print <pc_address> | print instruction at specified pc_address\n");
-  fprintf(stderr, "break <pc_address> | set breakpoint\n");
+  fprintf(stderr, "break <instruction> | set breakpoint\n");
   fprintf(stderr, "continue           | run until breakpoint or end\n");
   fprintf(stderr, "exit               | exit program\n");
   fprintf(stderr, "step               | execute next instruction\n");
@@ -112,10 +112,74 @@ int start_debug(void)
   }
   return 1;
 }
+void print_instruction(struct vec *buf)
+{
+  char *arg = calloc(100, 1);
+  int index = get_arg(buf->data);
+  strncpy(arg, buf->data + index, strlen(buf->data) - index);
+  int e = 0;
+  unsigned long addr = strtou32(arg, NULL, 16, &e);
+  if (e)
+    fprintf(stderr, "Bad address\n");
+  else
+    printf("0x%08lx\n", *((uint32_t *)glob->memory) + addr);
+  free(arg);
+}
+
+uint32_t add_breakpoint(struct vec *buf)
+{
+  char *arg = calloc(100, 1);
+  int index = get_arg(buf->data);
+  strncpy(arg, buf->data + index, strlen(buf->data) - index);
+  int e = 0;
+  uint32_t addr = strtou32(arg, NULL, 16, &e);
+  free(arg);
+  if (e)
+  {
+    fprintf(stderr, "Bad address\n");
+    return 0;
+  }
+  printf("Add breakpoint to: 0x%08x\n", addr);
+  return addr;
+}
+
+int is_breakpoint(uint32_t value, uint32_t *break_list, size_t size)
+{
+  size_t i = 0;
+  while (i <= size)
+  {
+    if (value == break_list[i])
+      return 1;
+    i++;
+  }
+  return 0;
+}
+
+int continue_exec(uint32_t *break_list, size_t size)
+{
+  while (1)
+  {
+    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+    int ret = exec_inst(instru);
+
+    if (ret)
+    {
+      if (ret == 1)
+        fprintf(stderr, "Error during execution\n");
+      return 0;
+    }
+    if (is_breakpoint(glob->pc, break_list, size))
+      break;
+
+  }
+  return 1;
+}
 
 void debug(void)
 {
   struct vec *buf = calloc(1, sizeof(struct vec));
+  uint32_t break_list[1000] = { -1 };
+  size_t b_list_size = 0;
   while (1)
   {
     if (!parse_cmd(buf))
@@ -136,11 +200,12 @@ void debug(void)
       break;
     }
     if (!strcmp(buf->data, "registers"))
+    {
       print_registers();
+    }
     else if (!strcmp(buf->data, "start"))
     {
-      int ret = start_debug();
-      if (!ret)
+      if (!start_debug())
       {
         vec_destroy(buf);
         break;
@@ -165,14 +230,21 @@ void debug(void)
     }
     else if (!strncmp(buf->data, "print", 5))
     {
-      char *arg = calloc(100, 1);
-      int index = get_arg(buf->data);
-      strncpy(arg, buf->data + index, strlen(buf->data) - index);
-      int e = 0;
-      unsigned long addr = strtou32(arg, NULL, 16, &e);
-      printf("error convert to u32: %d\n", e);
-      printf("0x%08lx\n", *((uint32_t *)glob->memory) + addr);
-      free(arg);
+      print_instruction(buf);
+    }
+    else if (!strncmp(buf->data, "break", 5))
+    {
+      uint32_t addr = add_breakpoint(buf);
+      if (addr)
+        break_list[b_list_size] = addr;
+    }
+    else if (!strcmp(buf->data, "continue"))
+    {
+      if (!continue_exec(break_list, b_list_size))
+      {
+        vec_destroy(buf);
+        break;
+      }
     }
     else if (!strcmp(buf->data, "help"))
     {
