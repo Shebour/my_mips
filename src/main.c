@@ -10,6 +10,8 @@
 #include "cpu.h"
 #include "dbg.h"
 #include "define.h"
+#include "logger.h"
+#include "readelf.h"
 #include "utils.h"
 
 struct global *glob = NULL;
@@ -34,9 +36,9 @@ int main(int argc, char **argv)
     clean_exit();
     return EXIT_SUCCESS;
   }
-  int ret = execute();
-  if (ret == 1)
-    fprintf(stderr, "Error during execution\n");
+  if (execute() == 1)
+    LOG_ERROR("Error during execution");
+
   clean_exit();
   return EXIT_SUCCESS;
 }

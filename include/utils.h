@@ -16,9 +16,9 @@ struct global
   size_t code_size;
   int debug;
   int log;
+  int elf;
 };
 
-int init_memory(char *path);
 int init_global(int argc, char **argv);
 void clean_exit(void);
 uint32_t strtou32(const char *nptr, char **endptr, int base, int *rstatus);

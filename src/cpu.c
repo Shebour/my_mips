@@ -24,7 +24,7 @@ int exec_register(uint32_t *instruction)
   uint8_t sa = ((*instruction) >> 6) & 0x1F;
   if (rd == 0x0 && function != JR && function != JALR)
   {
-    perror("Cannot overwrite R0\n");
+    LOG_ERROR("You cannot override R0");
     return 1;
   }
   switch (function)
@@ -299,12 +299,23 @@ int exec_inst(uint32_t *instru)
   {
     uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
     exec_inst(next_instru);
-    if (inst_type == JUMP)
-      exec_jump(instru);
-    if (inst_type == IMM)
-      exec_immediate(instru);
-    if (inst_type == REG)
-      exec_register(instru);
+    switch (inst_type)
+    {
+    case JUMP:
+      if (exec_jump(instru))
+        return 1;
+      break;
+    case IMM:
+      if (exec_immediate(instru))
+        return 1;
+      break;
+    case REG:
+      if (exec_register(instru))
+        return 1;
+      break;
+    default:
+      return 1;
+    }
     return 0;
   }
   if (*instru == 0xc)
@@ -316,12 +327,23 @@ int exec_inst(uint32_t *instru)
   }
 
   uint8_t opcode = (*instru) >> 26;
-  if (opcode == 0)
-    exec_register(instru);
-  else if (opcode == J || opcode == JAL || opcode == TRAP)
-    exec_jump(instru);
-  else
-    exec_immediate(instru);
+  switch (opcode)
+  {
+  case 0:
+    if (exec_register(instru))
+      return 1;
+    break;
+  case J:
+  case JAL:
+  case TRAP:
+    if(exec_jump(instru))
+      return 1;
+    break;
+  default:
+    if (exec_immediate(instru))
+      return 1;
+    break;
+  }
 
   return 0;
 }

@@ -17,7 +17,8 @@ C_SOURCES= src/main.c \
 					 src/cstream_string.c \
 					 src/error.c \
 					 src/interruptible_readline.c \
-					 src/vec.c
+					 src/vec.c \
+					 src/readelf.c
 
 C_INCLUDES= -Iinclude
 LDLIBS= -lreadline
