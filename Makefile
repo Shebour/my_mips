@@ -39,29 +39,29 @@ debug: $(DEBUG_DIR)/$(TARGET)
 
 asan: CFLAGS += -g -fsanitize=address
 asan: LDLIBS = -lasan -lreadline
-asan:  $(ASAN_DIR)/$(TARGET)
+asan: $(ASAN_DIR)/$(TARGET)
 
 coverage: CFLAGS += --coverage
 coverage: LDLIBS += --coverage
 coverage: clean release
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
-	$(CC) -c $(CFLAGS) $(C_INCLUDES) $< -o $@
+	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
-	$(CC) $(LDLIBS) $(OBJECTS) -o $@
+	$(CC) $(OBJECTS) -o $@ $(LDLIBS)
 
 $(DEBUG_DIR)/%.o: %.c Makefile | $(DEBUG_DIR)
-	$(CC) -c $(CFLAGS) $(C_INCLUDES) $< -o $@
+	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
 
 $(DEBUG_DIR)/$(TARGET): $(OBJECTS_DEBUG) Makefile
-	$(CC) $(LDLIBS) $(OBJECTS_DEBUG) -o $@
+	$(CC) $(OBJECTS_DEBUG) -o $@ $(LDLIBS)
 
 $(ASAN_DIR)/%.o: %.c Makefile | $(ASAN_DIR)
-	$(CC) -c $(CFLAGS) $(C_INCLUDES) $< -o $@
+	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
 
 $(ASAN_DIR)/$(TARGET): $(OBJECTS_ASAN) Makefile
-	$(CC) $(LDLIBS) $(OBJECTS_ASAN) -o $@
+	$(CC) $(OBJECTS_ASAN) -o $@ $(LDLIBS)
 
 
 $(BUILD_DIR):

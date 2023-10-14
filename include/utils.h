@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <elf.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -17,6 +18,9 @@ struct global
   int debug;
   int log;
   int elf;
+  Elf32_Ehdr elf_header;
+  Elf32_Phdr *prg_header;
+  Elf32_Shdr *sec_header;
 };
 
 int init_global(int argc, char **argv);

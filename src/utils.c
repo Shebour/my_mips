@@ -1,6 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
 #include "utils.h"
 
-#include <elf.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -27,12 +27,27 @@ int check_header(Elf32_Ehdr elf_header)
     if (magic_number[i] != elf_header.e_ident[i])
       return 0;
   }
+  if (elf_header.e_ident[EI_CLASS] != ELFCLASS32)
+    return 0;
+  if (elf_header.e_ident[EI_DATA] != ELFDATA2LSB)
+    return 0;
+  if (elf_header.e_ident[EI_VERSION] != EV_CURRENT)
+    return 0;
+  if (elf_header.e_ident[EI_OSABI] != ELFOSABI_SYSV)
+    return 0;
+  if (elf_header.e_type != ET_EXEC)
+    return 0;
+  if (elf_header.e_machine != EM_MIPS)
+    return 0;
+  if (elf_header.e_version != EV_CURRENT)
+    return 0;
+  if (elf_header.e_phoff != 0x34)
+    return 0;
   return 1;
 }
 
-int binary_or_elf(char *path)
-{
-  struct stat st;
+int open_file(char *path)
+{struct stat st;
   if (stat(path, &st) == -1)
   {
     LOG_ERROR("stat(%s) error: %s", path, strerror(errno));
@@ -56,27 +71,64 @@ int binary_or_elf(char *path)
   if (fd < 0)
   {
     LOG_ERROR("open(%s) error: %s", path, strerror(errno));
-    return 0;
+    return -1;
   }
   glob->code_size = st.st_size;
+  return fd;
+}
+
+int binary_or_elf(char *path)
+{
+  int fd = open_file(path);
+  if (fd == -1)
+    return -1;
   Elf32_Ehdr elf_header;
   ssize_t ret = read(fd, &elf_header, 52);
   if (ret == -1 || ret != 52)
   {
-    LOG_ERROR("Cannot read header");
+    LOG_ERROR("Cannot read elf header");
     return -1;
   }
-  if (!check_header(elf_header))
-    glob->elf = 0;
-  else
+  if (check_header(elf_header))
+  {
+    Elf32_Phdr *prg_header = calloc(elf_header.e_phnum, elf_header.e_phentsize);
+    ret = pread(fd, prg_header, elf_header.e_phnum * elf_header.e_phentsize, elf_header.e_phoff);
+    if (ret == -1)
+    {
+      LOG_ERROR("Cannot read program header");
+      return -1;
+    }
+    Elf32_Shdr *sec_header = calloc(elf_header.e_shnum, elf_header.e_shentsize);
+    ret = pread(fd, sec_header, elf_header.e_shnum * elf_header.e_shentsize, elf_header.e_shoff);
+    if (ret == -1)
+    {
+      LOG_ERROR("Cannot read section header");
+      return -1;
+    }
+    LOG_INFO("Executing ELF32 file");
     glob->elf = 1;
+    glob->elf_header = elf_header;
+    glob->prg_header = prg_header;
+    glob->sec_header = sec_header;
+    Elf32_Shdr sec_names = glob->sec_header[glob->elf_header.e_shstrndx];
+    char *str = calloc(sec_names.sh_size, 1);
+    ret = pread(fd, str, sec_names.sh_size, sec_names.sh_offset+1);
+    if (ret == -1)
+      return -1;
+    return fd;
+  }
+  glob->elf = 0;
   return fd;
 }
 
 int init_memory(int fd)
 {
+  if (glob->elf == 1)
+  {
+
+  }
   void *memory_file =
-      mmap(NULL, glob->code_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    mmap(NULL, glob->code_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 
   if (close(fd) < 0)
   {
@@ -90,7 +142,7 @@ int init_memory(int fd)
   }
 
   void *memory = mmap(NULL, MEM_SIZE, PROT_READ | PROT_WRITE,
-                      MAP_PRIVATE | MAP_ANON, -1, 0);
+      MAP_PRIVATE | MAP_ANON, -1, 0);
   if (memory == MAP_FAILED)
   {
     perror("Error mapping program memory\n");
@@ -155,14 +207,13 @@ int init_global(int argc, char **argv)
 void clean_exit(void)
 {
   if (munmap(glob->memory, MEM_SIZE) == -1)
-  {
-    perror("Error unmapping file\n");
-  }
+    LOG_ERROR("Error freeing memory: %s", strerror(errno));
+  free(glob->prg_header);
   free(glob);
 }
 
 uint32_t strtou32(const char *__restrict nptr, char **__restrict endptr,
-                  int base, int *rstatus)
+    int base, int *rstatus)
 {
   int serrno;
   uintmax_t im;
@@ -174,7 +225,6 @@ uint32_t strtou32(const char *__restrict nptr, char **__restrict endptr,
   _DIAGASSERT(hi >= lo);
 
   _DIAGASSERT(nptr != NULL);
-  /* endptr may be NULL */
 
   if (endptr == NULL)
     endptr = &ep;
@@ -192,10 +242,8 @@ uint32_t strtou32(const char *__restrict nptr, char **__restrict endptr,
 
   if (*rstatus == 0)
   {
-    /* No digits were found */
     if (nptr == *endptr)
       *rstatus = ECANCELED;
-    /* There are further characters after number */
     else if (**endptr != '\0')
       *rstatus = ENOTSUP;
   }

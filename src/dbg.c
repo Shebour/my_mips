@@ -47,12 +47,10 @@ enum error get_content(struct cstream *cs, struct vec *line)
 
 int parse_cmd(struct vec *line)
 {
-  struct cstream *cs;
+  if (!isatty(STDIN_FILENO))
+    return 0;
 
-  if (isatty(STDIN_FILENO))
-    cs = cstream_readline_create();
-  else
-    cs = cstream_file_create(stdin, false);
+  struct cstream *cs = cstream_readline_create();
 
   vec_init(line);
   enum error er = get_content(cs, line);

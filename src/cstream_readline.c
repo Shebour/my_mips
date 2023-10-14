@@ -94,7 +94,7 @@ static const struct cstream_type cstream_readline_type = {
 
 struct cstream *cstream_readline_create()
 {
-  struct cstream_readline *cstream = malloc(sizeof(*cstream));
+  struct cstream_readline *cstream = malloc(sizeof(struct cstream_readline));
   cstream->base.type = &cstream_readline_type;
   cstream->current_line = NULL;
   cstream->line_position = 0;

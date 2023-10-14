@@ -15,7 +15,6 @@
 #include "utils.h"
 
 struct global *glob = NULL;
-extern void free_all_mem(void);
 
 int main(int argc, char **argv)
 {
