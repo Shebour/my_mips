@@ -14,13 +14,14 @@ struct global
   uint32_t lo;
   void *memory;
   uint32_t pc;
+  size_t file_size;
   size_t code_size;
   int debug;
   int log;
   int elf;
+  void *elf_file;
   Elf32_Ehdr elf_header;
   Elf32_Phdr *prg_header;
-  Elf32_Shdr *sec_header;
 };
 
 int init_global(int argc, char **argv);

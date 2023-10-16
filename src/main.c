@@ -11,7 +11,6 @@
 #include "dbg.h"
 #include "define.h"
 #include "logger.h"
-#include "readelf.h"
 #include "utils.h"
 
 struct global *glob = NULL;

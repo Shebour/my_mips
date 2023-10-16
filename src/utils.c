@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "logger.h"
+#include "map_elf.h"
 
 #define _DIAGASSERT(t)
 
@@ -73,7 +74,7 @@ int open_file(char *path)
     LOG_ERROR("open(%s) error: %s", path, strerror(errno));
     return -1;
   }
-  glob->code_size = st.st_size;
+  glob->file_size = st.st_size;
   return fd;
 }
 
@@ -82,6 +83,12 @@ int binary_or_elf(char *path)
   int fd = open_file(path);
   if (fd == -1)
     return -1;
+  glob->elf_file = mmap(NULL, glob->file_size, PROT_READ, MAP_PRIVATE | MAP_ANON, -1, 0);
+  if (glob->elf_file == MAP_FAILED)
+  {
+    LOG_ERROR("Error mapping file %s: %s", path, strerror(errno));
+    return -1;
+  }
   Elf32_Ehdr elf_header;
   ssize_t ret = read(fd, &elf_header, 52);
   if (ret == -1 || ret != 52)
@@ -98,23 +105,10 @@ int binary_or_elf(char *path)
       LOG_ERROR("Cannot read program header");
       return -1;
     }
-    Elf32_Shdr *sec_header = calloc(elf_header.e_shnum, elf_header.e_shentsize);
-    ret = pread(fd, sec_header, elf_header.e_shnum * elf_header.e_shentsize, elf_header.e_shoff);
-    if (ret == -1)
-    {
-      LOG_ERROR("Cannot read section header");
-      return -1;
-    }
     LOG_INFO("Executing ELF32 file");
     glob->elf = 1;
     glob->elf_header = elf_header;
     glob->prg_header = prg_header;
-    glob->sec_header = sec_header;
-    Elf32_Shdr sec_names = glob->sec_header[glob->elf_header.e_shstrndx];
-    char *str = calloc(sec_names.sh_size, 1);
-    ret = pread(fd, str, sec_names.sh_size, sec_names.sh_offset+1);
-    if (ret == -1)
-      return -1;
     return fd;
   }
   glob->elf = 0;
@@ -123,21 +117,18 @@ int binary_or_elf(char *path)
 
 int init_memory(int fd)
 {
-  if (glob->elf == 1)
-  {
-
-  }
   void *memory_file =
-    mmap(NULL, glob->code_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    mmap(NULL, glob->file_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+
+  if (memory_file == MAP_FAILED)
+  {
+    LOG_ERROR("Error mapping file: %s", strerror(errno));
+    return 0;
+  }
 
   if (close(fd) < 0)
   {
-    perror("Error closing file: %s\n");
-    return 0;
-  }
-  if (memory_file == MAP_FAILED)
-  {
-    perror("Error mapping file\n");
+    LOG_ERROR("Error closing file: %s", strerror(errno));
     return 0;
   }
 
@@ -145,22 +136,19 @@ int init_memory(int fd)
       MAP_PRIVATE | MAP_ANON, -1, 0);
   if (memory == MAP_FAILED)
   {
-    perror("Error mapping program memory\n");
-    if (munmap(memory_file, glob->code_size) == -1)
-    {
-      perror("Error unmapping file\n");
-    }
+    LOG_ERROR("Error mapping program memory: %s", strerror(errno));
+    if (munmap(memory_file, glob->file_size) == -1)
+      LOG_ERROR("Error unmapping file: %s", strerror(errno));
     return 0;
   }
-  memory = memcpy(memory, memory_file, glob->code_size);
+  memory = memcpy(memory, memory_file, glob->file_size);
 
-  if (munmap(memory_file, glob->code_size) == -1)
+  if (munmap(memory_file, glob->file_size) == -1)
   {
-    perror("Error unmapping file\n");
+    LOG_ERROR("Error unmapping program memory: %s", strerror(errno));
     return 0;
   }
   glob->memory = memory;
-
   return 1;
 }
 
@@ -198,7 +186,12 @@ int init_global(int argc, char **argv)
   }
   glob->pc = 0x0;
   int fd = binary_or_elf(argv[argc - 1]);
-  if (!init_memory(fd))
+  if (glob->elf)
+  {
+    if (!map_elf(fd))
+      return 0;
+  }
+  else if (!init_memory(fd))
     return 0;
   glob->reg[SP] = MEM_SIZE - sizeof(uint32_t);
   return 1;
