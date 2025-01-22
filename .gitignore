@@ -8,3 +8,4 @@ my_program
 *.gcov
 *.html
 *.css
+*.out

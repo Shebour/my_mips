@@ -1,3 +1,4 @@
+export PATH := /usr/lib/mipsel-elf/mipsel-elf/bin:$(PATH)
 OBJS = crt.o stdlib.o my_program.o
 PROGRAM = my_program
 
