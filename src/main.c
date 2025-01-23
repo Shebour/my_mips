@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    fprintf(stderr, "Usage: %s [-d] <path to MIPS executable>\n", argv[0]);
+    fprintf(stderr, "Usage: %s [-l] [-d] <path to MIPS executable>\n", argv[0]);
     return 1;
   }
 
