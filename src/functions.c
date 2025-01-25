@@ -159,3 +159,17 @@ void sltiu(uint32_t rs, uint32_t imm, uint32_t rt)
   else
     glob->reg[rt] = 0;
 }
+
+uint32_t load_word(uint32_t address) {
+  return ((uint32_t *)glob->memory)[address] | 
+    (((uint32_t *)glob->memory)[address + 1] << 8) | 
+    (((uint32_t *)glob->memory)[address + 2] << 16) | 
+    (((uint32_t *)glob->memory)[address + 3] << 24);
+}
+
+void store_word(uint32_t address, uint32_t value) {
+  ((uint32_t *)glob->memory)[address]     = value & 0xFF;
+  ((uint32_t *)glob->memory)[address + 1] = (value >> 8) & 0xFF;
+  ((uint32_t *)glob->memory)[address + 2] = (value >> 16) & 0xFF;
+  ((uint32_t *)glob->memory)[address + 3] = (value >> 24) & 0xFF;
+}

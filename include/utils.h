@@ -7,12 +7,19 @@
 
 #include "define.h"
 
+struct tuple {
+  uint32_t addr;
+  uint32_t value;
+};
+
 struct global
 {
   uint32_t reg[NB_REG];
   uint32_t hi;
   uint32_t lo;
   void *memory;
+  struct tuple map[100];
+  size_t map_index;
   uint32_t pc;
   size_t file_size;
   size_t code_size;

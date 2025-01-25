@@ -17,5 +17,6 @@ void addi(uint32_t rs, int32_t imm, uint32_t rt);
 void addiu(uint32_t rs, int32_t imm, uint32_t rt);
 void slti(uint32_t rs, int32_t imm, uint32_t rt);
 void sltiu(uint32_t rs, uint32_t imm, uint32_t rt);
-
+uint32_t load_word(uint32_t address);
+void store_word(uint32_t address, uint32_t value);
 #endif /* FUNCTIONS_H */

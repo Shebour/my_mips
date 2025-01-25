@@ -9,6 +9,7 @@
 #include "cpu.h"
 #include "cstream.h"
 #include "error.h"
+#include "logger.h"
 #include "utils.h"
 #include "vec.h"
 
@@ -19,10 +20,33 @@ void print_registers(void)
   printf("pc  = 0x%08x\n", glob->pc);
   printf("hi  = 0x%08x\n", glob->hi);
   printf("lo  = 0x%08x\n", glob->lo);
-  for (int i = 0; i < NB_REG; i++)
+  for (int i = 1; i <= NB_REG; i++)
   {
-    printf("r%-2d = 0x%08x\n", i, glob->reg[i]);
+    printf("r%-2d = 0x%08x ", i-1, glob->reg[i-1]);
+    if (i % 8 == 0)
+      printf("\n");
   }
+}
+
+void print_memory(void)
+{
+  for (size_t i = 0; i < 100; i++)
+  {
+    if (glob->map[i].addr != 0x0)
+      printf("0x%08x = 0x%08x ", glob->map[i].addr, glob->map[i].value);
+  }
+  printf("\n");
+}
+
+void print_code(void) {
+  uint32_t save_pc = glob->pc;
+  
+  for (glob->pc = 0; glob->pc < glob->file_size; glob->pc += 4)
+  {
+    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+    log_instr(instru, __FILENAME__, __LINE__);
+  }
+  glob->pc = save_pc;
 }
 
 enum error get_content(struct cstream *cs, struct vec *line)
@@ -76,17 +100,15 @@ int get_arg(char *data)
 void help_debug(void)
 {
   fprintf(stderr, "--------------------\n");
-  fprintf(stderr, "registers          | print registers\n");
-  fprintf(
-      stderr,
-      "print <pc_address> | print instruction at specified pc_address\n");
+  fprintf(stderr, "registers           | print registers\n");
+  fprintf(stderr, "memory              | print memory\n");
+  fprintf(stderr, "code                | print code\n");
+  fprintf(stderr, "print <pc_address>  | print instruction at specified pc_address\n");
   fprintf(stderr, "break <instruction> | set breakpoint\n");
-  fprintf(stderr, "continue           | run until breakpoint or end\n");
-  fprintf(stderr, "exit               | exit program\n");
-  fprintf(stderr, "step               | execute next instruction\n");
-  fprintf(stderr,
-      "start              | set breakpoint at first instruction and "
-      "start program\n");
+  fprintf(stderr, "continue            | run until breakpoint or end\n");
+  fprintf(stderr, "exit                | exit program\n");
+  fprintf(stderr, "step                | execute next instruction\n");
+  fprintf(stderr, "start               | set breakpoint at first instruction and start program\n");
   fprintf(stderr, "--------------------\n");
 }
 
@@ -119,8 +141,10 @@ void print_instruction(struct vec *buf)
   unsigned long addr = strtou32(arg, NULL, 16, &e);
   if (e)
     fprintf(stderr, "Bad address\n");
-  else
-    printf("0x%08lx\n", *((uint32_t *)glob->memory) + addr);
+  else {
+    uint32_t addr2 = *((uint32_t *)glob->memory) + addr;
+    log_instr(&addr2, __FILENAME__, __LINE__);
+  }
   free(arg);
 }
 
@@ -200,6 +224,14 @@ void debug(void)
     if (!strcmp(buf->data, "registers"))
     {
       print_registers();
+    }
+    if (!strcmp(buf->data, "memory"))
+    {
+      print_memory();
+    }
+    if (!strcmp(buf->data, "code"))
+    {
+      print_code();
     }
     else if (!strcmp(buf->data, "start"))
     {

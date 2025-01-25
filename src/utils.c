@@ -194,6 +194,8 @@ int init_global(int argc, char **argv)
   else if (!init_memory(fd))
     return 0;
   glob->reg[SP] = MEM_SIZE - sizeof(uint32_t);
+  memset(glob->map, 0, sizeof(glob->map));
+  glob->map_index = 0;
   return 1;
 }
 
@@ -201,7 +203,8 @@ void clean_exit(void)
 {
   if (munmap(glob->memory, MEM_SIZE) == -1)
     LOG_ERROR("Error freeing memory: %s", strerror(errno));
-  free(glob->prg_header);
+  if (glob->elf)
+    free(glob->prg_header);
   free(glob);
 }
 
