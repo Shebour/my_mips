@@ -40,7 +40,8 @@ SRC		= hello_world.s \
 		  errors.s \
 		  badsyscall.s \
 		  disasm_sampler.s \
-		  fpu.s
+		  fpu.s \
+		  game.s
 OBJ		= $(SRC:.s=.o)
 ELF		= $(OBJ:.o=.elf)
 EXE		= $(OBJ:.o=.exe)

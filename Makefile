@@ -11,6 +11,7 @@ C_SOURCES= src/main.c \
 					 src/syscalls.c \
 					 src/cpu.c \
 					 src/fpu.c \
+					 src/device.c \
 					 src/disasm.c \
 					 src/logger.c \
 					 src/dbg.c \
@@ -24,6 +25,14 @@ C_SOURCES= src/main.c \
 
 C_INCLUDES= -Iinclude
 LDLIBS= -lreadline -lm
+
+# Optional SDL2 backend for the game system's framebuffer. When SDL2 is not
+# installed the device falls back to a no-op (the emulator still builds).
+SDL_LIBS := $(shell pkg-config --libs sdl2 2>/dev/null)
+ifneq ($(SDL_LIBS),)
+CFLAGS += -DHAVE_SDL $(shell pkg-config --cflags sdl2 2>/dev/null)
+LDLIBS += $(SDL_LIBS)
+endif
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_COV=$(addprefix $(COV_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
@@ -41,7 +50,7 @@ debug: CFLAGS += -g
 debug: $(DEBUG_DIR)/$(TARGET)
 
 asan: CFLAGS += -g -fsanitize=address
-asan: LDLIBS = -lasan -lreadline -lm
+asan: LDLIBS = -lasan -lreadline -lm $(SDL_LIBS)
 asan: $(ASAN_DIR)/$(TARGET)
 
 coverage: CFLAGS += --coverage

@@ -1,6 +1,7 @@
 #include "functions.h"
 
 #include "decode.h"
+#include "device.h"
 #include "utils.h"
 
 extern struct global *glob;
@@ -100,6 +101,9 @@ uint32_t load_half(uint32_t address)
 
 uint32_t load_word(uint32_t address)
 {
+  uint32_t dev;
+  if (device_load_word(address, &dev))
+    return dev;
   uint8_t *m = (uint8_t *)glob->memory;
   return m[address] | (m[address + 1] << 8) | (m[address + 2] << 16)
       | (m[address + 3] << 24);
@@ -119,6 +123,8 @@ void store_half(uint32_t address, uint32_t value)
 
 void store_word(uint32_t address, uint32_t value)
 {
+  if (device_store_word(address, value))
+    return;
   uint8_t *m = (uint8_t *)glob->memory;
   m[address] = value & 0xFF;
   m[address + 1] = (value >> 8) & 0xFF;
