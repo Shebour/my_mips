@@ -1,0 +1,31 @@
+TODO
+====
+
+Done
+----
+[x] $0 writes are now silently discarded instead of erroring.
+[x] SRA/SRAV do an arithmetic shift and no longer clobber the source.
+[x] Branch offsets are sign-extended and relative to the delay slot.
+[x] Loads/stores sign-extend their immediate offset.
+[x] Delay-slot handling reworked into a clean branch-delay pipeline; all
+    branches (incl. bgez/bltz/bgezal/bltzal via REGIMM rt decoding) run
+    their delay slot exactly once.
+[x] mult/multu/div/divu write HI/LO in the correct order.
+[x] addi/addiu/slti/sltiu sign-extend their immediate.
+[x] Implemented lb, lbu, lh, lhu, lwl, lwr, sb, sh, swl, swr; fixed the
+    byte-addressed memory helpers.
+[x] break instruction.
+[x] Compiler warnings (logger.c, map_elf.c) cleaned up.
+
+Tests
+-----
+[ ] Add tests exercising the byte/halfword loads and stores
+    (lb/lbu/lh/lhu/sb/sh) and the unaligned ones (lwl/lwr/swl/swr); these
+    are implemented but not covered by the current test programs.
+
+Bonus (optional)
+----------------
+[ ] Finish ELF loading: copy PT_LOAD segments into emulated memory and
+    jump to the entry point (src/map_elf.c, loop body is still a stub).
+[ ] Integrated debugger improvements (src/dbg.c, -d flag).
+[ ] GDB remote stub, JIT compilation, FPU/COP1 instructions.

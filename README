@@ -1,0 +1,89 @@
+my_mips
+=======
+
+A MIPS-I userland emulator. It loads a MIPS little-endian program (either a
+flat binary produced with objcopy, or an ELF executable) into an emulated
+address space and interprets it instruction by instruction, emulating a
+small set of SPIM-compatible syscalls for I/O.
+
+
+Building
+--------
+
+    make            # builds everything (release, debug, asan, tests)
+    make release    # optimized build  -> build/bin/my_mips
+    make debug      # debug build       -> build/debug/my_mips
+    make asan       # AddressSanitizer  -> build/asan/my_mips
+    make clean      # remove object files
+    make distclean  # remove binaries and generated files
+
+Note: the MIPS target programs under test/ are built with clang
+(--target=mipsel-linux-gnu) and linked with the mipsel binutils linker,
+because Ubuntu no longer ships a mipsel gcc cross-compiler. See test/c/Makefile.
+
+
+Usage
+-----
+
+    ./build/bin/my_mips [-l] [-d] <program>
+
+    <program>   a MIPS little-endian flat binary (.exe) or ELF executable
+    -l          log/trace every executed instruction (pc, raw word, mnemonic)
+    -d          drop into the integrated debugger instead of running freely
+
+Example:
+
+    $ mipsel-linux-gnu-as hello.s -o hello.o
+    $ mipsel-linux-gnu-objcopy -O binary hello.o hello.exe
+    $ ./build/bin/my_mips hello.exe
+    Hello World!
+
+
+How it works
+------------
+
+Memory model
+    The whole address space is a single mmap'd buffer (see MEM_SIZE in
+    include/define.h). The program is loaded at address 0 and execution
+    starts at the entry point (pc = 0). The stack pointer ($sp) is
+    initialized to the top of memory and grows downward, matching the
+    model in the subject.
+
+Registers
+    32 general purpose registers plus the special HI/LO pair and PC are
+    kept in the global state (struct global). Register $0 is hardwired to
+    0. Conventional register names (V0, A0, SP, RA, ...) are defined in
+    include/define.h.
+
+Decoding and dispatch
+    Each 32-bit instruction is classified as one of the three MIPS formats
+    (R, I, J) from its opcode/function fields, then dispatched to a handler:
+        exec_register   - R-type (opcode 0): arithmetic, logic, shifts,
+                          HI/LO moves, jr/jalr
+        exec_immediate  - I-type: immediate arithmetic/logic, branches,
+                          loads and stores
+        exec_jump       - J-type: j, jal
+    Unknown opcodes return an error.
+
+Delay slots
+    Branches and jumps execute the instruction in their delay slot before
+    transferring control, as required by the MIPS-I architecture.
+
+Syscalls
+    The SYSCALL instruction dispatches on $v0 using the SPIM convention.
+    Implemented syscalls:
+        1  print_int      4  print_string   5  read_int    8  read_string
+        10 exit           11 print_char     12 read_char   13 open
+        14 read           15 write          16 close       17 exit2
+    Following the subject, a trap writes 1 to $k0 on overflow and 0
+    otherwise instead of raising a real exception.
+
+
+Layout
+------
+
+    src/         emulator source
+    include/     headers
+    test/        assembly test programs (.s) and their build
+    test/c/      C test program compiled to MIPS and run on the emulator
+    docs/        project subject
