@@ -1,6 +1,5 @@
 #include "dbg.h"
 
-#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,280 +7,313 @@
 
 #include "cpu.h"
 #include "cstream.h"
+#include "disasm.h"
 #include "error.h"
-#include "logger.h"
 #include "utils.h"
 #include "vec.h"
 
 extern struct global *glob;
 
+#define MAX_BREAKPOINTS 128
+
+static uint32_t breakpoints[MAX_BREAKPOINTS];
+static size_t nbreakpoints = 0;
+static int halted = 0; /* set once the program exits or errors */
+
+static uint32_t word_at(uint32_t addr)
+{
+  return ((uint32_t *)glob->memory)[addr / 4];
+}
+
 void print_registers(void)
 {
-  printf("pc  = 0x%08x\n", glob->pc);
-  printf("hi  = 0x%08x\n", glob->hi);
-  printf("lo  = 0x%08x\n", glob->lo);
-  for (int i = 1; i <= NB_REG; i++)
+  printf("pc = 0x%08x   hi = 0x%08x   lo = 0x%08x\n", glob->pc, glob->hi,
+         glob->lo);
+  for (int i = 0; i < NB_REG; i++)
   {
-    printf("r%-2d = 0x%08x ", i-1, glob->reg[i-1]);
-    if (i % 8 == 0)
-      printf("\n");
+    printf("r%-2d = 0x%08x", i, glob->reg[i]);
+    printf((i % 4 == 3) ? "\n" : "   ");
   }
 }
 
-void print_memory(void)
+/* Print "Executing pc = ...: <hex>: <disasm>" for the instruction at pc. */
+static void trace_instr(uint32_t pc)
 {
-  for (size_t i = 0; i < 100; i++)
-  {
-    if (glob->map[i].addr != 0x0)
-      printf("0x%08x = 0x%08x ", glob->map[i].addr, glob->map[i].value);
-  }
-  printf("\n");
+  char dis[64];
+  uint32_t instr = word_at(pc);
+  disassemble(instr, dis, sizeof(dis));
+  printf("Executing pc = 0x%08x: 0x%08x: %s\n", pc, instr, dis);
 }
 
-void print_code(void) {
-  uint32_t save_pc = glob->pc;
-  
-  for (glob->pc = 0; glob->pc < glob->file_size; glob->pc += 4)
-  {
-    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-    log_instr(instru, __FILENAME__, __LINE__);
-  }
-  glob->pc = save_pc;
-}
-
-enum error get_content(struct cstream *cs, struct vec *line)
+static int bp_contains(uint32_t addr)
 {
-  enum error err;
+  for (size_t i = 0; i < nbreakpoints; i++)
+    if (breakpoints[i] == addr)
+      return 1;
+  return 0;
+}
 
-  while (true)
+static void bp_add(uint32_t addr)
+{
+  if (bp_contains(addr))
+    return;
+  if (nbreakpoints >= MAX_BREAKPOINTS)
   {
-    int c;
-    if ((err = cstream_pop(cs, &c)))
-      return err;
+    printf("Too many breakpoints\n");
+    return;
+  }
+  breakpoints[nbreakpoints++] = addr;
+  printf("Breakpoint set at 0x%08x\n", addr);
+}
 
-    if (c == EOF || c == '\n')
+static void bp_delete(uint32_t addr)
+{
+  for (size_t i = 0; i < nbreakpoints; i++)
+    if (breakpoints[i] == addr)
     {
-      vec_push(line, 0);
-      break;
+      breakpoints[i] = breakpoints[--nbreakpoints];
+      printf("Breakpoint removed at 0x%08x\n", addr);
+      return;
     }
-    vec_push(line, c);
-  }
-  return NO_ERROR;
+  printf("No breakpoint at 0x%08x\n", addr);
 }
 
-int parse_cmd(struct vec *line)
+static void bp_list(void)
 {
-  if (!isatty(STDIN_FILENO))
-    return 0;
-
-  struct cstream *cs = cstream_readline_create();
-
-  vec_init(line);
-  enum error er = get_content(cs, line);
-
-  cstream_free(cs);
-  if (er != NO_ERROR)
-    return 0;
-  return 1;
-}
-
-int get_arg(char *data)
-{
-  int i = 0;
-  while (data[i] != 0)
+  if (nbreakpoints == 0)
   {
-    if (data[i] == ' ')
-      return i;
-    i++;
+    printf("No breakpoints\n");
+    return;
   }
-  return -1;
+  for (size_t i = 0; i < nbreakpoints; i++)
+    printf("  0x%08x\n", breakpoints[i]);
 }
 
-void help_debug(void)
+/* Run one instruction, reporting a clean exit or an error. */
+static int do_step(void)
 {
-  fprintf(stderr, "--------------------\n");
-  fprintf(stderr, "registers           | print registers\n");
-  fprintf(stderr, "memory              | print memory\n");
-  fprintf(stderr, "code                | print code\n");
-  fprintf(stderr, "print <pc_address>  | print instruction at specified pc_address\n");
-  fprintf(stderr, "break <instruction> | set breakpoint\n");
-  fprintf(stderr, "continue            | run until breakpoint or end\n");
-  fprintf(stderr, "exit                | exit program\n");
-  fprintf(stderr, "step                | execute next instruction\n");
-  fprintf(stderr, "start               | set breakpoint at first instruction and start program\n");
-  fprintf(stderr, "--------------------\n");
-}
-
-int start_debug(void)
-{
-  if (glob->pc != 0)
+  if (halted)
   {
-    fprintf(stderr, "Do you want to restart the program ? [y/N] ");
-    int r = getchar();
-    if (r != 'y' && r != 'Y')
+    printf("Program has finished.\n");
+    return 0;
+  }
+  trace_instr(glob->pc);
+  int ret = step_instruction();
+  if (ret == 1)
+  {
+    printf("Error during execution\n");
+    halted = 1;
+  }
+  else if (ret == 2)
+  {
+    printf("Program exited.\n");
+    halted = 1;
+  }
+  return ret;
+}
+
+static void do_continue(void)
+{
+  if (halted)
+  {
+    printf("Program has finished.\n");
+    return;
+  }
+  while (1)
+  {
+    if (do_step() != 0)
+      return;
+    if (bp_contains(glob->pc))
+    {
+      printf("Breakpoint at 0x%08x\n", glob->pc);
+      return;
+    }
+  }
+}
+
+/* Disassemble the whole loaded program. */
+static void print_code(void)
+{
+  char dis[64];
+  for (uint32_t pc = 0; pc < glob->file_size; pc += 4)
+  {
+    uint32_t instr = word_at(pc);
+    disassemble(instr, dis, sizeof(dis));
+    printf("0x%08x: 0x%08x: %s\n", pc, instr, dis);
+  }
+}
+
+static void print_word(uint32_t addr)
+{
+  char dis[64];
+  uint32_t instr = word_at(addr);
+  disassemble(instr, dis, sizeof(dis));
+  printf("0x%08x: 0x%08x: %s\n", addr, instr, dis);
+}
+
+static void dump_memory(uint32_t addr, size_t count)
+{
+  for (size_t i = 0; i < count; i++)
+    printf("0x%08x: 0x%08x\n", addr + (uint32_t)(i * 4), word_at(addr + i * 4));
+}
+
+static void help_debug(void)
+{
+  printf("Commands:\n");
+  printf("  step [n]        execute n instructions (default 1)\n");
+  printf("  continue        run until a breakpoint or the end\n");
+  printf("  break <addr>    set a breakpoint (hex address)\n");
+  printf("  delete <addr>   remove a breakpoint\n");
+  printf("  breakpoints     list breakpoints\n");
+  printf("  registers       print the registers\n");
+  printf("  print <addr>    disassemble the instruction at addr\n");
+  printf("  memory <addr> [n]  dump n memory words (default 1)\n");
+  printf("  code            disassemble the whole program\n");
+  printf("  help            show this help\n");
+  printf("  exit            quit the debugger\n");
+}
+
+/* --- command parsing helpers --- */
+
+/* True if line starts with command a (or alias b) at a word boundary. */
+static int is_cmd(const char *line, const char *a, const char *b)
+{
+  size_t la = strlen(a);
+  if (!strncmp(line, a, la) && (line[la] == 0 || line[la] == ' '))
+    return 1;
+  if (b)
+  {
+    size_t lb = strlen(b);
+    if (!strncmp(line, b, lb) && (line[lb] == 0 || line[lb] == ' '))
       return 1;
-  }
-  glob->pc = 0;
-  uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-  int ret = exec_inst(instru);
-  if (ret)
-  {
-    if (ret == 1)
-      fprintf(stderr, "Error during execution\n");
-    return 0;
-  }
-  return 1;
-}
-void print_instruction(struct vec *buf)
-{
-  char *arg = calloc(100, 1);
-  int index = get_arg(buf->data);
-  strncpy(arg, buf->data + index, strlen(buf->data) - index);
-  int e = 0;
-  unsigned long addr = strtou32(arg, NULL, 16, &e);
-  if (e)
-    fprintf(stderr, "Bad address\n");
-  else {
-    uint32_t addr2 = *((uint32_t *)glob->memory) + addr;
-    log_instr(&addr2, __FILENAME__, __LINE__);
-  }
-  free(arg);
-}
-
-uint32_t add_breakpoint(struct vec *buf)
-{
-  char *arg = calloc(100, 1);
-  int index = get_arg(buf->data);
-  strncpy(arg, buf->data + index, strlen(buf->data) - index);
-  int e = 0;
-  uint32_t addr = strtou32(arg, NULL, 16, &e);
-  free(arg);
-  if (e)
-  {
-    fprintf(stderr, "Bad address\n");
-    return 0;
-  }
-  printf("Add breakpoint to: 0x%08x\n", addr);
-  return addr;
-}
-
-int is_breakpoint(uint32_t value, uint32_t *break_list, size_t size)
-{
-  size_t i = 0;
-  while (i <= size)
-  {
-    if (value == break_list[i])
-      return 1;
-    i++;
   }
   return 0;
 }
 
-int continue_exec(uint32_t *break_list, size_t size)
+/* Pointer to the first argument after the command word, or NULL. */
+static char *cmd_arg(char *line)
 {
-  while (1)
+  while (*line && *line != ' ')
+    line++;
+  while (*line == ' ')
+    line++;
+  return *line ? line : NULL;
+}
+
+static int parse_addr(char *line, uint32_t *out)
+{
+  char *a = cmd_arg(line);
+  if (!a)
   {
-    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-    int ret = exec_inst(instru);
-
-    if (ret)
-    {
-      if (ret == 1)
-        fprintf(stderr, "Error during execution\n");
-      return 0;
-    }
-    if (is_breakpoint(glob->pc, break_list, size))
-      break;
-
+    printf("Missing address\n");
+    return 0;
+  }
+  /* Copy just the first token so a trailing count (e.g. "memory 0x0 3")
+   * does not confuse the hex parser. */
+  char tok[32];
+  size_t i = 0;
+  while (a[i] && a[i] != ' ' && i < sizeof(tok) - 1)
+  {
+    tok[i] = a[i];
+    i++;
+  }
+  tok[i] = 0;
+  int status = 0;
+  *out = strtou32(tok, NULL, 16, &status);
+  if (status)
+  {
+    printf("Bad address\n");
+    return 0;
   }
   return 1;
 }
 
-void debug(void)
+static void run_command(char *line, int *quit)
 {
-  struct vec *buf = calloc(1, sizeof(struct vec));
-  uint32_t break_list[1000] = { -1 };
-  size_t b_list_size = 0;
+  uint32_t addr;
+  if (is_cmd(line, "step", "s"))
+  {
+    char *a = cmd_arg(line);
+    long n = a ? strtol(a, NULL, 10) : 1;
+    for (long i = 0; i < n && !halted; i++)
+      do_step();
+  }
+  else if (is_cmd(line, "continue", "c"))
+    do_continue();
+  else if (is_cmd(line, "break", "b"))
+  {
+    if (parse_addr(line, &addr))
+      bp_add(addr);
+  }
+  else if (is_cmd(line, "delete", "d"))
+  {
+    if (parse_addr(line, &addr))
+      bp_delete(addr);
+  }
+  else if (is_cmd(line, "breakpoints", NULL))
+    bp_list();
+  else if (is_cmd(line, "registers", "regs"))
+    print_registers();
+  else if (is_cmd(line, "print", "p"))
+  {
+    if (parse_addr(line, &addr))
+      print_word(addr);
+  }
+  else if (is_cmd(line, "memory", "m"))
+  {
+    if (parse_addr(line, &addr))
+    {
+      /* optional second token after the address = word count */
+      char *a = cmd_arg(line);
+      char *sp = strchr(a, ' ');
+      size_t count = sp ? (size_t)strtoul(sp + 1, NULL, 10) : 1;
+      dump_memory(addr, count ? count : 1);
+    }
+  }
+  else if (is_cmd(line, "code", NULL))
+    print_code();
+  else if (is_cmd(line, "help", "h"))
+    help_debug();
+  else if (is_cmd(line, "exit", "quit") || is_cmd(line, "q", NULL))
+    *quit = 1;
+  else
+    printf("Unknown command: %s (try 'help')\n", line);
+}
+
+static enum error read_line(struct cstream *cs, struct vec *line)
+{
+  enum error err;
   while (1)
   {
-    if (!parse_cmd(buf))
+    int c;
+    if ((err = cstream_pop(cs, &c)))
+      return err;
+    if (c == EOF || c == '\n')
     {
-      vec_destroy(buf);
-      break;
+      vec_push(line, 0);
+      return NO_ERROR;
     }
-
-    if (!buf || !buf->data)
-    {
-      fprintf(stderr, "Error during parsing\n");
-      vec_destroy(buf);
-      break;
-    }
-    if (strlen(buf->data) == 0)
-    {
-      vec_destroy(buf);
-      break;
-    }
-    if (!strcmp(buf->data, "registers"))
-    {
-      print_registers();
-    }
-    if (!strcmp(buf->data, "memory"))
-    {
-      print_memory();
-    }
-    if (!strcmp(buf->data, "code"))
-    {
-      print_code();
-    }
-    else if (!strcmp(buf->data, "start"))
-    {
-      if (!start_debug())
-      {
-        vec_destroy(buf);
-        break;
-      }
-    }
-    else if (!strcmp(buf->data, "step"))
-    {
-      uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-      int ret = exec_inst(instru);
-      if (ret)
-      {
-        if (ret == 1)
-          fprintf(stderr, "Error during execution\n");
-        vec_destroy(buf);
-        break;
-      }
-    }
-    else if (!strcmp(buf->data, "exit"))
-    {
-      vec_destroy(buf);
-      break;
-    }
-    else if (!strncmp(buf->data, "print", 5))
-    {
-      print_instruction(buf);
-    }
-    else if (!strncmp(buf->data, "break", 5))
-    {
-      uint32_t addr = add_breakpoint(buf);
-      if (addr)
-        break_list[b_list_size] = addr;
-    }
-    else if (!strcmp(buf->data, "continue"))
-    {
-      if (!continue_exec(break_list, b_list_size))
-      {
-        vec_destroy(buf);
-        break;
-      }
-    }
-    else if (!strcmp(buf->data, "help"))
-    {
-      help_debug();
-    }
-    vec_destroy(buf);
+    vec_push(line, c);
   }
-  free(buf);
-  return;
+}
+
+void debug(void)
+{
+  int interactive = isatty(STDIN_FILENO);
+  struct cstream *cs = interactive ? cstream_readline_create()
+                                   : cstream_file_create(stdin, false);
+  int quit = 0;
+  while (!quit)
+  {
+    struct vec line;
+    vec_init(&line);
+    if (read_line(cs, &line) != NO_ERROR || line.size <= 1)
+    {
+      vec_destroy(&line);
+      break; /* EOF or empty line */
+    }
+    run_command(line.data, &quit);
+    vec_destroy(&line);
+  }
+  cstream_free(cs);
 }

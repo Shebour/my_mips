@@ -301,26 +301,37 @@ int exec_inst(uint32_t *instru)
   }
 }
 
+/* Execute exactly one instruction, applying the branch-delay pipeline.
+ * Returns 0 to continue, 1 on a decode error, 2 to stop (exit / break).
+ * Shared by execute() and the integrated debugger so both step identically. */
+int step_instruction(void)
+{
+  uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+
+  /* A branch scheduled by the previous instruction takes effect now, after
+   * its delay slot (the instruction we are about to run) has executed. */
+  int take = branch_pending;
+  uint32_t target = branch_target;
+  branch_pending = 0;
+
+  int ret = exec_inst(instru);
+  if (ret == 0)
+  {
+    pc_step(4);
+    if (take)
+      glob->pc = target;
+  }
+  return ret;
+}
+
 int execute(void)
 {
   while (1)
   {
-    uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
-
-    /* A branch scheduled by the previous instruction takes effect now, after
-     * its delay slot (the instruction we are about to run) has executed. */
-    int take = branch_pending;
-    uint32_t target = branch_target;
-    branch_pending = 0;
-
-    int ret = exec_inst(instru);
+    int ret = step_instruction();
     if (ret == 1)
       return 1; /* decode/execution error */
     if (ret == 2)
       return 0; /* clean stop (exit / break) */
-
-    pc_step(4);
-    if (take)
-      glob->pc = target;
   }
 }

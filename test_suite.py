@@ -37,18 +37,21 @@ def execute_test(test_data):
     _input          : str | None    = test_data['input']
     expected_stdout : str | None    = test_data['expected_stdout']
     expected_stderr : str | None    = test_data['expected_stderr']
-    
+    flags           : str | None    = test_data.get('flags')
+
     if expected_stdout and "{binary_name}" in expected_stdout:
         expected_stdout = expected_stdout.replace("{binary_name}", binary)
     if expected_stderr and "{binary_name}" in expected_stderr:
         expected_stderr = expected_stderr.replace("{binary_name}", binary)
     print(f"=== {test_name} ===")
+    args = [binary]
+    if flags:
+        args += flags.split()
+    if param is not None:
+        args.append(param)
     try:
-        if param == None:
-            proc = subprocess.run([binary], capture_output=True, text=True, input=_input, timeout=2)
-        else:
-            proc = subprocess.run([binary, param], capture_output=True,
-                                text=True, input=_input, timeout=2)
+        proc = subprocess.run(args, capture_output=True, text=True,
+                              input=_input, timeout=2)
         exit_status = proc.returncode
         out_proc = proc.stdout
         err_proc = proc.stderr

@@ -54,10 +54,12 @@ Architecture
 Bonus roadmap (easiest -> hardest)
 ----------------------------------
 [x] 1. MIPS32: mul, madd/maddu, msub/msubu, clz/clo, movz/movn.
-[ ] 2. Improve the integrated debugger (src/dbg.c, -d flag): more
-       commands (breakpoints, memory/register examine, step N,
-       disassemble) and a breakpoint hook in execute(). Builds on the
-       existing cstream / readline scaffolding; local, no networking.
+[x] 2. Integrated debugger (src/dbg.c, -d flag): rewritten to share the
+       single-step pipeline (step_instruction in cpu.c) and the shared
+       disassembler. Commands: step [n], continue, break/delete/
+       breakpoints, registers, print, memory [n], code, help, exit.
+       Works with piped scripts (not just a TTY), so it is covered by the
+       suite via a new optional "flags" field in test_suite.py.
 [ ] 3. FPU / COP1: new f0-f31 register file + FCSR, a COP1 decode path,
        arithmetic / moves / loads-stores / compares-branches /
        conversions. Mechanical but high-volume.
