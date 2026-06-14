@@ -7,5 +7,5 @@
     .global start
 start:
     jal main
-    ori $v0, $zero, 810
+    ori $v0, $zero, 10
     syscall

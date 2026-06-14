@@ -3,32 +3,121 @@
     {
       "name": "No parameters",
       "param": null,
-      "expected": "Usage: {binary_name} [-l] [-d] <path to MIPS executable>\n"
+      "input": null,
+      "expected_stdout": "",
+      "expected_stderr": "Usage: {binary_name} [-l] [-d] <path to MIPS executable>\n"
     },
     {
       "name": "Add word",
-      "param": "add.exe",
-      "expected": "102"
+      "param": "test/add.exe",
+      "input": null,
+      "expected_stdout": "102",
+      "expected_stderr": ""
     },
     {
       "name": "Hello World",
-      "param": "hello_world.exe",
-      "expected": "Hello World!\n"
+      "param": "test/hello_world.exe",
+      "input": null,
+      "expected_stdout": "Hello World!\n",
+      "expected_stderr": ""
     },
     {
       "name": "Load upper immediate",
-      "param": "lui.exe",
-      "expected": "65536"
+      "param": "test/lui.exe",
+      "input": null,
+      "expected_stdout": "65536",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Read int",
+      "param": "test/read_int.exe",
+      "input": "50",
+      "expected_stdout": "51",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Read string",
+      "param": "test/read_string.exe",
+      "input": "azerty",
+      "expected_stdout": "azerty",
+      "expected_stderr": ""
     },
     {
       "name": "Substract word",
-      "param": "sub.exe",
-      "expected": "-30"
+      "param": "test/sub.exe",
+      "input": null,
+      "expected_stdout": "-30",
+      "expected_stderr": ""
     },
     {
       "name": "Add unsigned word",
-      "param": "addu.exe",
-      "expected": "102"
+      "param": "test/addu.exe",
+      "input": null,
+      "expected_stdout": "102",
+      "expected_stderr": ""
+    },
+    {
+      "name": "My Program",
+      "param": "test/c/my_program",
+      "input": null,
+      "expected_stdout": "fact(6) = 720\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Add word ELF",
+      "param": "test/add.elf",
+      "input": null,
+      "expected_stdout": "102",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Hello World ELF",
+      "param": "test/hello_world.elf",
+      "input": null,
+      "expected_stdout": "Hello World!\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Load upper immediate ELF",
+      "param": "test/lui.elf",
+      "input": null,
+      "expected_stdout": "65536",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Read int ELF",
+      "param": "test/read_int.elf",
+      "input": "10",
+      "expected_stdout": "11",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Read string ELF",
+      "param": "test/read_string.elf",
+      "input": "qwerty",
+      "expected_stdout": "qwerty\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Substract word ELF",
+      "param": "test/sub.elf",
+      "input": null,
+      "expected_stdout": "-30",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Add unsigned word ELF",
+      "param": "test/addu.elf",
+      "input": null,
+      "expected_stdout": "102",
+      "expected_stderr": ""
+    },
+    {
+      "name": "My Program ELF",
+      "param": "test/c/my_program.elf",
+      "input": null,
+      "expected_stdout": "fact(6) = 720\n",
+      "expected_stderr": ""
     }
   ]
 }
