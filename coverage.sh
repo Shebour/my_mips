@@ -3,7 +3,6 @@
 rm -rf coverage
 mkdir coverage
 
-make clean
 make coverage
 make test
 

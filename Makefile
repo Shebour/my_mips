@@ -16,7 +16,6 @@ C_SOURCES= src/main.c \
 					 src/cstream.c \
 					 src/cstream_file.c \
 					 src/cstream_readline.c \
-					 src/cstream_string.c \
 					 src/error.c \
 					 src/interruptible_readline.c \
 					 src/vec.c \

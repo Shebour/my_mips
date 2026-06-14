@@ -35,7 +35,10 @@ SRC		= hello_world.s \
 		  break.s \
 		  trap.s \
 		  fileio.s \
-		  mips32.s
+		  mips32.s \
+		  errors.s \
+		  badsyscall.s \
+		  disasm_sampler.s
 OBJ		= $(SRC:.s=.o)
 ELF		= $(OBJ:.o=.elf)
 EXE		= $(OBJ:.o=.exe)

@@ -247,6 +247,83 @@
       "input": "memory 0x4 2\ndelete 0x50\nbreakpoints\nbadcmd\nexit\n",
       "expected_stdout": "0x00000004: 0x00000000\n0x00000008: 0x3402000a\nNo breakpoint at 0x00000050\nNo breakpoints\nUnknown command: badcmd (try 'help')\n",
       "expected_stderr": ""
+    },
+    {
+      "name": "Error paths: addi overflow and divide-by-zero",
+      "param": "test/errors.exe",
+      "input": null,
+      "expected_stdout": "1\n7\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Unknown syscall halts (coverage of error path)",
+      "param": "test/badsyscall.exe",
+      "input": null,
+      "expected_stdout": "",
+      "expected_stderr": null
+    },
+    {
+      "name": "Missing file reports an error (coverage of loader path)",
+      "param": "test/does_not_exist.exe",
+      "input": null,
+      "expected_stdout": "",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage (-l over many instructions)",
+      "param": "test/disasm_sampler.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage: branches (-l)",
+      "param": "test/branch.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "1\n0\n1\n0\n1\n1\n1\n",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage: jal/jalr links (-l)",
+      "param": "test/branchlink.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "7\n8\n9\n",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage: div/divu (-l)",
+      "param": "test/errors.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "1\n7\n",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage: unaligned load/store (-l)",
+      "param": "test/unaligned.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "-559038737\n-554692044\n",
+      "expected_stderr": null
+    },
+    {
+      "name": "Debugger: list and delete breakpoints",
+      "param": "test/add.exe",
+      "flags": "-d",
+      "input": "break 0x100\nbreak 0x104\nbreakpoints\ndelete 0x100\nbreakpoints\nexit\n",
+      "expected_stdout": "Breakpoint set at 0x00000100\nBreakpoint set at 0x00000104\n  0x00000100\n  0x00000104\nBreakpoint removed at 0x00000100\n  0x00000104\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Debugger: step N / registers / bad address / list",
+      "param": "test/add.exe",
+      "flags": "-d",
+      "input": "step 2\nregisters\nprint zzz\nbreakpoints\nexit\n",
+      "expected_stdout": "Executing pc = 0x00000000: 0x0c000040: jal 0x100\nExecuting pc = 0x00000004: 0x00000000: nop\npc = 0x00000100   hi = 0x00000000   lo = 0x00000000\nr0  = 0x00000000   r1  = 0x00000000   r2  = 0x00000000   r3  = 0x00000000\nr4  = 0x00000000   r5  = 0x00000000   r6  = 0x00000000   r7  = 0x00000000\nr8  = 0x00000000   r9  = 0x00000000   r10 = 0x00000000   r11 = 0x00000000\nr12 = 0x00000000   r13 = 0x00000000   r14 = 0x00000000   r15 = 0x00000000\nr16 = 0x00000000   r17 = 0x00000000   r18 = 0x00000000   r19 = 0x00000000\nr20 = 0x00000000   r21 = 0x00000000   r22 = 0x00000000   r23 = 0x00000000\nr24 = 0x00000000   r25 = 0x00000000   r26 = 0x00000000   r27 = 0x00000000\nr28 = 0x00000000   r29 = 0xfffffffc   r30 = 0x00000000   r31 = 0x00000008\nBad address\nNo breakpoints\n",
+      "expected_stderr": ""
     }
   ]
 }

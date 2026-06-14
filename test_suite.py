@@ -17,11 +17,13 @@ passed = 0
 total = 0
 
 def check_test(exp_stdout, exp_stderr, got_stdout, got_stderr):
+    # A null expectation means "do not check this stream" (useful for runs
+    # whose stderr is volatile, e.g. -l traces with source line numbers).
     error_happened = False
-    if exp_stdout != got_stdout:
+    if exp_stdout is not None and exp_stdout != got_stdout:
         print(f"Got stdout : {got_stdout}\nExpected stdout: {exp_stdout}")
         error_happened = True
-    if exp_stderr != got_stderr:
+    if exp_stderr is not None and exp_stderr != got_stderr:
         print(f"Got stderr : {got_stderr}\nExpected stderr: {exp_stderr}")
         error_happened = True
     if error_happened:

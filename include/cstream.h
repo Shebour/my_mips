@@ -64,11 +64,5 @@ enum error cstream_free(struct cstream *cstream);
  */
 struct cstream *cstream_file_create(FILE *file, bool fclose_on_free);
 
-/**
- * \brief Creates a stream which read from the given string.
- * Freeing the stream does not free the string.
- */
-struct cstream *cstream_string_create(const char *str);
-
 /** \brief Creates a stream which read user input with readline */
 struct cstream *cstream_readline_create();
