@@ -66,8 +66,12 @@ Bonus roadmap (easiest -> hardest)
        precision add/sub/mul/div/sqrt/abs/neg/mov, conversions
        (cvt.{s,d,w}.*), compares (c.{eq,lt,le}.*) and bc1t/bc1f. Test
        programs assemble with -mhard-float.
-[ ] 4. Game system: MMIO framebuffer, a graphics library, input and an
-       event loop, plus demo MIPS programs. Open-ended.
+[x] 4. Game system (src/device.c): a memory-mapped GPU. The program draws
+       ARGB pixels into a framebuffer (GPU_FB), presents a frame by storing
+       to GPU_FLUSH, and reads keys from GPU_INPUT. Rendered with SDL2
+       (detected via pkg-config; falls back to a no-op when SDL is absent,
+       and SDL is initialised lazily so non-graphical programs open no
+       window). Demo: test/game.s (a movable block, w/a/s/d to move).
 
 (GDB remote stub and JIT compilation dropped in favour of improving the
 existing debugger.)
