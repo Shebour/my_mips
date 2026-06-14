@@ -20,7 +20,21 @@ SRC		= hello_world.s \
 			sub.s \
 		  lui.s \
 		  read_int.s \
-		  read_string.s
+		  read_string.s \
+		  logic.s \
+		  shift.s \
+		  arith.s \
+		  hilo.s \
+		  setless.s \
+		  branch.s \
+		  branchlink.s \
+		  byte_half.s \
+		  unaligned.s \
+		  char.s \
+		  exit2.s \
+		  break.s \
+		  trap.s \
+		  fileio.s
 OBJ		= $(SRC:.s=.o)
 ELF		= $(OBJ:.o=.elf)
 EXE		= $(OBJ:.o=.exe)

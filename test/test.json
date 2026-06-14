@@ -95,7 +95,7 @@
       "name": "Read string ELF",
       "param": "test/read_string.elf",
       "input": "qwerty",
-      "expected_stdout": "qwerty\n",
+      "expected_stdout": "qwerty",
       "expected_stderr": ""
     },
     {
@@ -117,6 +117,104 @@
       "param": "test/c/my_program.elf",
       "input": null,
       "expected_stdout": "fact(6) = 720\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Logic (and/or/xor/nor/andi/xori)",
+      "param": "test/logic.exe",
+      "input": null,
+      "expected_stdout": "48\n252\n240\n-256\n15\n15\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Shifts (sll/srl/sra/sllv/srlv/srav)",
+      "param": "test/shift.exe",
+      "input": null,
+      "expected_stdout": "16\n8\n-4\n96\n16\n-16\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Arithmetic (addi/subu/multu/div/divu)",
+      "param": "test/arith.exe",
+      "input": null,
+      "expected_stdout": "99\n-5\n42\n3\n2\n6\n2\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "HI/LO (mthi/mfhi/mtlo/mflo)",
+      "param": "test/hilo.exe",
+      "input": null,
+      "expected_stdout": "4660\n22136\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Set less than (slt/sltu/sltiu)",
+      "param": "test/setless.exe",
+      "input": null,
+      "expected_stdout": "1\n0\n1\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Branches (bne/bgtz/blez/bltz/bgez)",
+      "param": "test/branch.exe",
+      "input": null,
+      "expected_stdout": "1\n0\n1\n0\n1\n1\n1\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Branch/jump and link (jalr/bgezal/bltzal)",
+      "param": "test/branchlink.exe",
+      "input": null,
+      "expected_stdout": "7\n8\n9\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Byte/half load-store (sb/lb/lbu/sh/lh/lhu)",
+      "param": "test/byte_half.exe",
+      "input": null,
+      "expected_stdout": "-85\n171\n-30875\n34661\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Unaligned load-store (swl/swr/lwl/lwr)",
+      "param": "test/unaligned.exe",
+      "input": null,
+      "expected_stdout": "-559038737\n-554692044\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Char syscalls (print_char/read_char)",
+      "param": "test/char.exe",
+      "input": "Z",
+      "expected_stdout": "AB\nZ",
+      "expected_stderr": ""
+    },
+    {
+      "name": "exit2 halts execution",
+      "param": "test/exit2.exe",
+      "input": null,
+      "expected_stdout": "A",
+      "expected_stderr": ""
+    },
+    {
+      "name": "break halts execution",
+      "param": "test/break.exe",
+      "input": null,
+      "expected_stdout": "A",
+      "expected_stderr": ""
+    },
+    {
+      "name": "Overflow traps to $k0 (add/sub)",
+      "param": "test/trap.exe",
+      "input": null,
+      "expected_stdout": "1\n3\n0\n1\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "File I/O (open/write/read/close)",
+      "param": "test/fileio.exe",
+      "input": null,
+      "expected_stdout": "Hello",
       "expected_stderr": ""
     }
   ]

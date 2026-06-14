@@ -5,7 +5,7 @@ import subprocess
 from colorama import Fore
 
 test_file = "test/test.json"
-binary = "build/bin/my_mips"
+binary = "build/coverage/my_mips"
 
 with open(test_file, 'r') as f:
     data = json.load(f)
