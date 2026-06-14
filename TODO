@@ -19,13 +19,27 @@ Done
 
 Tests
 -----
-[ ] Add tests exercising the byte/halfword loads and stores
-    (lb/lbu/lh/lhu/sb/sh) and the unaligned ones (lwl/lwr/swl/swr); these
-    are implemented but not covered by the current test programs.
+[x] Added per-instruction tests covering logic, shifts, arithmetic,
+    HI/LO moves, set-less-than, branches, jump-and-link, byte/half and
+    unaligned load-stores, char syscalls, exit2, break, overflow ($k0)
+    and file I/O. The suite passes 31/31; cpu.c 96%, functions.c 95%,
+    syscalls.c 94%.
+[ ] Cover the divide-by-zero paths and the read_string error path.
+
+Done (was bonus / latent bugs)
+------------------------------
+[x] ELF loading: PT_LOAD segments are copied into emulated memory and
+    execution starts at e_entry (src/map_elf.c).
+[x] Fixed SLTU function code (was 0x29, must be 0x2b) - sltu never worked.
+[x] exit2 now always halts; unknown syscalls halt with an error.
+[x] Overflow in add/addi/sub now writes 1 to $k0 (0 otherwise) per the
+    subject, instead of aborting via clean_exit() (which was a
+    use-after-free). $k0 is readable, so this is now testable.
+[x] File syscalls: _open maps the subject's read/write flag to real
+    open(2) flags (O_CREAT|O_TRUNC for write); open/read/write/close
+    verified by a round-trip test.
 
 Bonus (optional)
 ----------------
-[ ] Finish ELF loading: copy PT_LOAD segments into emulated memory and
-    jump to the entry point (src/map_elf.c, loop body is still a stub).
 [ ] Integrated debugger improvements (src/dbg.c, -d flag).
 [ ] GDB remote stub, JIT compilation, FPU/COP1 instructions.
