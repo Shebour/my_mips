@@ -10,6 +10,7 @@ C_SOURCES= src/main.c \
 					 src/utils.c \
 					 src/syscalls.c \
 					 src/cpu.c \
+					 src/fpu.c \
 					 src/disasm.c \
 					 src/logger.c \
 					 src/dbg.c \
@@ -22,7 +23,7 @@ C_SOURCES= src/main.c \
 					 src/map_elf.c
 
 C_INCLUDES= -Iinclude
-LDLIBS= -lreadline
+LDLIBS= -lreadline -lm
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_COV=$(addprefix $(COV_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
@@ -40,12 +41,21 @@ debug: CFLAGS += -g
 debug: $(DEBUG_DIR)/$(TARGET)
 
 asan: CFLAGS += -g -fsanitize=address
-asan: LDLIBS = -lasan -lreadline
+asan: LDLIBS = -lasan -lreadline -lm
 asan: $(ASAN_DIR)/$(TARGET)
 
 coverage: CFLAGS += --coverage
 coverage: LDLIBS += --coverage
 coverage: $(COV_DIR)/$(TARGET)
+
+check: release test
+	./test_suite.py
+
+check-coverage: coverage test
+	./test_suite.py
+	gcov -o build/coverage src/*.c
+	gcovr --html-details -o coverage/index.html
+	firefox coverage/index.html
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@

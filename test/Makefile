@@ -9,7 +9,8 @@ COPY		= mipsel-linux-gnu-objcopy
 
 
 # ASFLAGS		= -mips32 -msoft-float --em=mipslelf
-ASFLAGS 	= -mips32 -msoft-float -EL
+# hard-float so explicit COP1 (floating-point) instructions assemble
+ASFLAGS 	= -mips32 -mhard-float -EL
 LDFLAGS		= -T c/program.lds --build-id=none -EL
 # LDFLAGS 	= -mno-abicalls -fno-pic -fno-pie -G0 -ffreestanding -EL
 COPYFLAGS	= -O binary --only-section=.text
@@ -38,7 +39,8 @@ SRC		= hello_world.s \
 		  mips32.s \
 		  errors.s \
 		  badsyscall.s \
-		  disasm_sampler.s
+		  disasm_sampler.s \
+		  fpu.s
 OBJ		= $(SRC:.s=.o)
 ELF		= $(OBJ:.o=.elf)
 EXE		= $(OBJ:.o=.exe)

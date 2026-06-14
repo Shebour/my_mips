@@ -163,9 +163,11 @@ int init_global(int argc, char **argv)
   for (int i = 0; i < NB_REG; i++)
   {
     glob->reg[i] = 0x0;
+    glob->fpr[i] = 0x0;
   }
   glob->hi = 0x0;
   glob->lo = 0x0;
+  glob->fp_cond = 0;
 
   glob->debug = 0;
   glob->log = 0;

@@ -17,6 +17,8 @@ struct global
   uint32_t reg[NB_REG];
   uint32_t hi;
   uint32_t lo;
+  uint32_t fpr[NB_REG]; /* COP1 floating-point registers (raw bits) */
+  int fp_cond;          /* COP1 condition flag, set by c.cond.fmt */
   void *memory;
   struct tuple map[100];
   size_t map_index;

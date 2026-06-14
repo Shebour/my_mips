@@ -60,9 +60,12 @@ Bonus roadmap (easiest -> hardest)
        breakpoints, registers, print, memory [n], code, help, exit.
        Works with piped scripts (not just a TTY), so it is covered by the
        suite via a new optional "flags" field in test_suite.py.
-[ ] 3. FPU / COP1: new f0-f31 register file + FCSR, a COP1 decode path,
-       arithmetic / moves / loads-stores / compares-branches /
-       conversions. Mechanical but high-volume.
+[x] 3. FPU / COP1 (src/fpu.c): f0-f31 register file + condition flag, a
+       COP1 decode path (opcode 0x11) and the FP load/store opcodes.
+       Implements mtc1/mfc1, lwc1/swc1/ldc1/sdc1, single- and double-
+       precision add/sub/mul/div/sqrt/abs/neg/mov, conversions
+       (cvt.{s,d,w}.*), compares (c.{eq,lt,le}.*) and bc1t/bc1f. Test
+       programs assemble with -mhard-float.
 [ ] 4. Game system: MMIO framebuffer, a graphics library, input and an
        event loop, plus demo MIPS programs. Open-ended.
 

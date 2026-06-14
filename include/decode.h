@@ -56,7 +56,22 @@ static inline uint32_t target26(uint32_t i)
  * ------------------------------------------------------------------ */
 #define OP_SPECIAL 0x00 /* R-type: dispatch on funct        */
 #define OP_REGIMM 0x01  /* bltz/bgez/bltzal/bgezal on rt    */
+#define OP_COP1 0x11    /* floating-point coprocessor       */
 #define OP_SPECIAL2 0x1c /* MIPS32 mul/madd/clz on funct    */
+
+/* COP1 floating-point load/store opcodes */
+#define LWC1 0x31
+#define LDC1 0x35
+#define SWC1 0x39
+#define SDC1 0x3d
+
+/* COP1 format field (bits 25..21) */
+#define FMT_MFC1 0x00
+#define FMT_MTC1 0x04
+#define FMT_BC1 0x08
+#define FMT_S 0x10 /* single precision */
+#define FMT_D 0x11 /* double precision */
+#define FMT_W 0x14 /* fixed-point word  */
 
 #define J 0x2
 #define JAL 0x3

@@ -225,6 +225,13 @@
       "expected_stderr": ""
     },
     {
+      "name": "FPU/COP1 (moves, single/double arith, cvt, compares, bc1, ld/st)",
+      "param": "test/fpu.exe",
+      "input": null,
+      "expected_stdout": "7\n12\n10\n1\n4\n12\n1\n3\n3\n4\n3\n1\n4\n1\n",
+      "expected_stderr": ""
+    },
+    {
       "name": "Debugger: print / step / break",
       "param": "test/add.exe",
       "flags": "-d",
@@ -307,6 +314,14 @@
       "flags": "-l",
       "input": null,
       "expected_stdout": "-559038737\n-554692044\n",
+      "expected_stderr": null
+    },
+    {
+      "name": "Disassembler coverage: COP1 floating-point (-l)",
+      "param": "test/fpu.exe",
+      "flags": "-l",
+      "input": null,
+      "expected_stdout": "7\n12\n10\n1\n4\n12\n1\n3\n3\n4\n3\n1\n4\n1\n",
       "expected_stderr": null
     },
     {

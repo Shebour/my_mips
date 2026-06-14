@@ -1,5 +1,6 @@
 #include "cpu.h"
 
+#include "fpu.h"
 #include "functions.h"
 #include "logger.h"
 #include "syscalls.h"
@@ -18,14 +19,14 @@ void pc_step(int step)
   glob->pc += step;
 }
 
-static void schedule_branch(uint32_t target)
+void schedule_branch(uint32_t target)
 {
   branch_pending = 1;
   branch_target = target;
 }
 
 /* Target of a taken branch: signed offset relative to the delay slot. */
-static uint32_t branch_dest(uint32_t i)
+uint32_t branch_dest(uint32_t i)
 {
   return glob->pc + 4 + ((int16_t)imm16(i) << 2);
 }
@@ -295,6 +296,11 @@ int exec_inst(uint32_t *instru)
   {
   case OP_SPECIAL: return exec_register(instru);
   case OP_SPECIAL2: return exec_special2(instru);
+  case OP_COP1: return exec_cop1(instru);
+  case LWC1:
+  case LDC1:
+  case SWC1:
+  case SDC1: return exec_cop1_ldst(instru);
   case J:
   case JAL: return exec_jump(instru);
   default: return exec_immediate(instru);

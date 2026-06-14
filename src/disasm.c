@@ -145,6 +145,63 @@ static void disasm_immediate(uint32_t i, char *o, size_t n)
   }
 }
 
+static const char *fmt_suffix(uint8_t fmt)
+{
+  switch (fmt)
+  {
+  case FMT_S: return "s";
+  case FMT_D: return "d";
+  case FMT_W: return "w";
+  default: return "?";
+  }
+}
+
+static void disasm_cop1(uint32_t i, char *o, size_t n)
+{
+  uint8_t fmt = rs(i);
+  if (fmt == FMT_MFC1)
+  {
+    snprintf(o, n, "mfc1 r%d, f%d", rt(i), rd(i));
+    return;
+  }
+  if (fmt == FMT_MTC1)
+  {
+    snprintf(o, n, "mtc1 r%d, f%d", rt(i), rd(i));
+    return;
+  }
+  if (fmt == FMT_BC1)
+  {
+    snprintf(o, n, "bc1%c %d", ((i >> 16) & 1) ? 't' : 'f', (int16_t)imm16(i));
+    return;
+  }
+  const char *s = fmt_suffix(fmt);
+  uint8_t fd = shamt(i), fs = rd(i), ft = rt(i);
+  switch (funct(i))
+  {
+  case 0x00: snprintf(o, n, "add.%s f%d, f%d, f%d", s, fd, fs, ft); break;
+  case 0x01: snprintf(o, n, "sub.%s f%d, f%d, f%d", s, fd, fs, ft); break;
+  case 0x02: snprintf(o, n, "mul.%s f%d, f%d, f%d", s, fd, fs, ft); break;
+  case 0x03: snprintf(o, n, "div.%s f%d, f%d, f%d", s, fd, fs, ft); break;
+  case 0x04: snprintf(o, n, "sqrt.%s f%d, f%d", s, fd, fs); break;
+  case 0x05: snprintf(o, n, "abs.%s f%d, f%d", s, fd, fs); break;
+  case 0x06: snprintf(o, n, "mov.%s f%d, f%d", s, fd, fs); break;
+  case 0x07: snprintf(o, n, "neg.%s f%d, f%d", s, fd, fs); break;
+  case 0x20: snprintf(o, n, "cvt.s.%s f%d, f%d", s, fd, fs); break;
+  case 0x21: snprintf(o, n, "cvt.d.%s f%d, f%d", s, fd, fs); break;
+  case 0x24: snprintf(o, n, "cvt.w.%s f%d, f%d", s, fd, fs); break;
+  case 0x32: snprintf(o, n, "c.eq.%s f%d, f%d", s, fs, ft); break;
+  case 0x3c: snprintf(o, n, "c.lt.%s f%d, f%d", s, fs, ft); break;
+  case 0x3e: snprintf(o, n, "c.le.%s f%d, f%d", s, fs, ft); break;
+  default: snprintf(o, n, "cop1 0x%x", funct(i)); break;
+  }
+}
+
+/* COP1 load/store: ftN, offset(base) */
+static void fmem(char *o, size_t n, const char *m, uint32_t i)
+{
+  snprintf(o, n, "%s f%d, %d(r%d)", m, rt(i), (int16_t)imm16(i), rs(i));
+}
+
 void disassemble(uint32_t instr, char *out, size_t n)
 {
   if (instr == 0)
@@ -157,6 +214,11 @@ void disassemble(uint32_t instr, char *out, size_t n)
   case OP_SPECIAL: disasm_special(instr, out, n); break;
   case OP_SPECIAL2: disasm_special2(instr, out, n); break;
   case OP_REGIMM: disasm_regimm(instr, out, n); break;
+  case OP_COP1: disasm_cop1(instr, out, n); break;
+  case LWC1: fmem(out, n, "lwc1", instr); break;
+  case LDC1: fmem(out, n, "ldc1", instr); break;
+  case SWC1: fmem(out, n, "swc1", instr); break;
+  case SDC1: fmem(out, n, "sdc1", instr); break;
   case J: snprintf(out, n, "j 0x%x", target26(instr) << 2); break;
   case JAL: snprintf(out, n, "jal 0x%x", target26(instr) << 2); break;
   default: disasm_immediate(instr, out, n); break;
