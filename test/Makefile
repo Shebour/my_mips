@@ -1,11 +1,17 @@
 # my_mips
 
-AS		= mipsel-elf-as
-LD		= mipsel-elf-ld
-COPY		= mipsel-elf-objcopy
+# AS		= mipsel-elf-as
+# LD		= mipsel-elf-ld
+# COPY		= mipsel-elf-objcopy
+AS 			= mipsel-linux-gnu-as
+LD 			= mipsel-linux-gnu-ld
+COPY		= mipsel-linux-gnu-objcopy
 
-ASFLAGS		= -mips32 -msoft-float --em=mipslelf
+
+# ASFLAGS		= -mips32 -msoft-float --em=mipslelf
+ASFLAGS 	= -mips32 -msoft-float -EL
 LDFLAGS		= -T c/program.lds --build-id=none -EL
+# LDFLAGS 	= -mno-abicalls -fno-pic -fno-pie -G0 -ffreestanding -EL
 COPYFLAGS	= -O binary --only-section=.text
 
 SRC		= hello_world.s \
