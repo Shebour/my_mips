@@ -1,154 +1,91 @@
 #include "functions.h"
 
+#include "decode.h"
 #include "utils.h"
 
 extern struct global *glob;
 
-/* On signed overflow the subject asks us to write 1 to $k0 instead of
- * raising a real trap (and 0 when no overflow); rd is left unchanged. */
-void add(uint32_t rs, uint32_t rt, uint32_t rd)
+/* This module holds the instruction semantics that need more than a single
+ * expression: signed arithmetic with overflow handling, the 64-bit
+ * multiply/divide, and the byte-addressed memory accessors. The simple
+ * one-expression operations are inlined directly in cpu.c's dispatch. */
+
+/* Signed overflow writes 1 to $k0 (0 otherwise) per the subject instead of
+ * raising a real trap; the destination register is left unchanged. */
+void add(uint32_t i)
 {
-  int32_t rs_val = glob->reg[rs];
-  int32_t rt_val = glob->reg[rt];
-  int32_t res = 0;
-  if (__builtin_add_overflow(rs_val, rt_val, &res))
-  {
+  int32_t res;
+  if (__builtin_add_overflow((int32_t)glob->reg[rs(i)],
+                             (int32_t)glob->reg[rt(i)], &res))
     glob->reg[K0] = 1;
-  }
   else
   {
     glob->reg[K0] = 0;
-    glob->reg[rd] = res;
+    glob->reg[rd(i)] = res;
   }
 }
 
-void addu(uint32_t rs, uint32_t rt, uint32_t rd)
+void sub(uint32_t i)
 {
-  uint32_t rs_val = glob->reg[rs];
-  uint32_t rt_val = glob->reg[rt];
-  glob->reg[rd] = rs_val + rt_val;
-}
-
-void sub(uint32_t rs, uint32_t rt, uint32_t rd)
-{
-  int32_t rs_val = glob->reg[rs];
-  int32_t rt_val = glob->reg[rt];
-  int32_t res = 0;
-  if (__builtin_sub_overflow(rs_val, rt_val, &res))
-  {
+  int32_t res;
+  if (__builtin_sub_overflow((int32_t)glob->reg[rs(i)],
+                             (int32_t)glob->reg[rt(i)], &res))
     glob->reg[K0] = 1;
-  }
   else
   {
     glob->reg[K0] = 0;
-    glob->reg[rd] = res;
+    glob->reg[rd(i)] = res;
   }
 }
 
-void subu(uint32_t rs, uint32_t rt, uint32_t rd)
+void addi(uint32_t i)
 {
-  uint32_t rs_val = glob->reg[rs];
-  uint32_t rt_val = glob->reg[rt];
-  uint32_t res = rs_val - rt_val;
-  glob->reg[rd] = res;
+  int32_t res;
+  if (__builtin_add_overflow((int32_t)glob->reg[rs(i)], (int16_t)imm16(i), &res))
+    glob->reg[K0] = 1;
+  else
+  {
+    glob->reg[K0] = 0;
+    glob->reg[rt(i)] = res;
+  }
 }
 
-void div(uint32_t rs, uint32_t rt)
+/* mult/div: quotient/low product -> LO, remainder/high product -> HI. */
+void mult(uint32_t i)
 {
-  int32_t rs_val = glob->reg[rs];
-  int32_t rt_val = glob->reg[rt];
-  if (rt_val == 0)
-    return;
-  glob->lo = (uint32_t)(rs_val / rt_val); /* quotient  */
-  glob->hi = (uint32_t)(rs_val % rt_val); /* remainder */
-}
-
-void divu(uint32_t rs, uint32_t rt)
-{
-  uint32_t rs_val = glob->reg[rs];
-  uint32_t rt_val = glob->reg[rt];
-  if (rt_val == 0)
-    return;
-  glob->lo = rs_val / rt_val; /* quotient  */
-  glob->hi = rs_val % rt_val; /* remainder */
-}
-
-void mult(uint32_t rs, uint32_t rt)
-{
-  int32_t rs_val = glob->reg[rs];
-  int32_t rt_val = glob->reg[rt];
-  int64_t res = (int64_t)rs_val * rt_val;
+  int64_t res = (int64_t)(int32_t)glob->reg[rs(i)] * (int32_t)glob->reg[rt(i)];
   glob->lo = (uint32_t)res;
   glob->hi = (uint32_t)(res >> 32);
 }
 
-void multu(uint32_t rs, uint32_t rt)
+void multu(uint32_t i)
 {
-  uint32_t rs_val = glob->reg[rs];
-  uint32_t rt_val = glob->reg[rt];
-  uint64_t res = (uint64_t)rs_val * rt_val;
+  uint64_t res = (uint64_t)glob->reg[rs(i)] * glob->reg[rt(i)];
   glob->lo = (uint32_t)res;
   glob->hi = (uint32_t)(res >> 32);
 }
 
-void slt(uint32_t rs, uint32_t rt, uint32_t rd)
+void div(uint32_t i)
 {
-  int32_t rs_val = glob->reg[rs];
-  int32_t rt_val = glob->reg[rt];
-  if (rs_val < rt_val)
-    glob->reg[rd] = 1;
-  else
-    glob->reg[rd] = 0;
+  int32_t a = glob->reg[rs(i)];
+  int32_t b = glob->reg[rt(i)];
+  if (b == 0)
+    return; /* result is architecturally unpredictable */
+  glob->lo = (uint32_t)(a / b);
+  glob->hi = (uint32_t)(a % b);
 }
 
-void sltu(uint32_t rs, uint32_t rt, uint32_t rd)
+void divu(uint32_t i)
 {
-  uint32_t rs_val = glob->reg[rs];
-  uint32_t rt_val = glob->reg[rt];
-  if (rs_val < rt_val)
-    glob->reg[rd] = 1;
-  else
-    glob->reg[rd] = 0;
+  uint32_t a = glob->reg[rs(i)];
+  uint32_t b = glob->reg[rt(i)];
+  if (b == 0)
+    return;
+  glob->lo = a / b;
+  glob->hi = a % b;
 }
 
-void addi(uint32_t rs, int32_t imm, uint32_t rt)
-{
-  int32_t rs_val = glob->reg[rs];
-  int32_t res = 0;
-  if (__builtin_add_overflow(rs_val, imm, &res))
-  {
-    glob->reg[K0] = 1;
-  }
-  else
-  {
-    glob->reg[K0] = 0;
-    glob->reg[rt] = res;
-  }
-}
-
-void addiu(uint32_t rs, int32_t imm, uint32_t rt)
-{
-  uint32_t rs_val = glob->reg[rs];
-  glob->reg[rt] = rs_val + imm;
-}
-
-void slti(uint32_t rs, int32_t imm, uint32_t rt)
-{
-  int32_t rs_val = glob->reg[rs];
-  if (rs_val < imm)
-    glob->reg[rt] = 1;
-  else
-    glob->reg[rt] = 0;
-}
-
-void sltiu(uint32_t rs, uint32_t imm, uint32_t rt)
-{
-  uint32_t rs_val = glob->reg[rs];
-  if (rs_val < imm)
-    glob->reg[rt] = 1;
-  else
-    glob->reg[rt] = 0;
-}
+/* ---- byte-addressed little-endian memory ---- */
 
 uint32_t load_byte(uint32_t address)
 {

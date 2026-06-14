@@ -39,11 +39,21 @@ Done (was bonus / latent bugs)
     open(2) flags (O_CREAT|O_TRUNC for write); open/read/write/close
     verified by a round-trip test.
 
+Architecture
+------------
+[x] decode.h: instruction field accessors (op/rs/rt/rd/shamt/imm16/
+    target26/funct) + grouped ISA constants. Removes the field bit-
+    twiddling that was duplicated across every decoder.
+[x] disasm.c: a single pure disassembler shared by the -l trace and (next)
+    the debugger. Replaces the ~300 lines of parallel decode in logger.c
+    that kept drifting from the executor (it now knows the MIPS32 ops too).
+[x] cpu.c: uses the accessors, advances pc and logs centrally, and follows
+    one convention (simple ops inline, multi-line ops in functions.c).
+    Shrank from ~400 to ~230 lines.
+
 Bonus roadmap (easiest -> hardest)
 ----------------------------------
-[ ] 1. MIPS32: extend the existing R/I/J dispatch with the MIPS32
-       additions (mul, madd/maddu, msub/msubu, clz/clo, movz/movn).
-       No new CPU state, testable with .s programs.   <-- IN PROGRESS
+[x] 1. MIPS32: mul, madd/maddu, msub/msubu, clz/clo, movz/movn.
 [ ] 2. Improve the integrated debugger (src/dbg.c, -d flag): more
        commands (breakpoints, memory/register examine, step N,
        disassemble) and a breakpoint hook in execute(). Builds on the

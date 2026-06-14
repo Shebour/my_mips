@@ -10,6 +10,7 @@ C_SOURCES= src/main.c \
 					 src/utils.c \
 					 src/syscalls.c \
 					 src/cpu.c \
+					 src/disasm.c \
 					 src/logger.c \
 					 src/dbg.c \
 					 src/cstream.c \
