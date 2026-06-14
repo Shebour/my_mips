@@ -65,10 +65,8 @@ void div(uint32_t rs, uint32_t rt)
   int32_t rt_val = glob->reg[rt];
   if (rt_val == 0)
     return;
-  uint32_t q = rs_val / rt_val;
-  uint32_t r = rs_val % rt_val;
-  glob->hi = q;
-  glob->lo = r;
+  glob->lo = (uint32_t)(rs_val / rt_val); /* quotient  */
+  glob->hi = (uint32_t)(rs_val % rt_val); /* remainder */
 }
 
 void divu(uint32_t rs, uint32_t rt)
@@ -77,28 +75,26 @@ void divu(uint32_t rs, uint32_t rt)
   uint32_t rt_val = glob->reg[rt];
   if (rt_val == 0)
     return;
-  uint32_t q = rs_val / rt_val;
-  uint32_t r = rs_val % rt_val;
-  glob->hi = q;
-  glob->lo = r;
+  glob->lo = rs_val / rt_val; /* quotient  */
+  glob->hi = rs_val % rt_val; /* remainder */
 }
 
 void mult(uint32_t rs, uint32_t rt)
 {
   int32_t rs_val = glob->reg[rs];
   int32_t rt_val = glob->reg[rt];
-  int64_t res = rs_val * rt_val;
-  glob->hi = (int32_t)res;
-  glob->lo = res >> 32;
+  int64_t res = (int64_t)rs_val * rt_val;
+  glob->lo = (uint32_t)res;
+  glob->hi = (uint32_t)(res >> 32);
 }
 
 void multu(uint32_t rs, uint32_t rt)
 {
   uint32_t rs_val = glob->reg[rs];
   uint32_t rt_val = glob->reg[rt];
-  uint64_t res = rs_val * rt_val;
-  glob->hi = (uint32_t)res;
-  glob->lo = res >> 32;
+  uint64_t res = (uint64_t)rs_val * rt_val;
+  glob->lo = (uint32_t)res;
+  glob->hi = (uint32_t)(res >> 32);
 }
 
 void slt(uint32_t rs, uint32_t rt, uint32_t rd)
@@ -160,16 +156,41 @@ void sltiu(uint32_t rs, uint32_t imm, uint32_t rt)
     glob->reg[rt] = 0;
 }
 
-uint32_t load_word(uint32_t address) {
-  return ((uint32_t *)glob->memory)[address] | 
-    (((uint32_t *)glob->memory)[address + 1] << 8) | 
-    (((uint32_t *)glob->memory)[address + 2] << 16) | 
-    (((uint32_t *)glob->memory)[address + 3] << 24);
+uint32_t load_byte(uint32_t address)
+{
+  return ((uint8_t *)glob->memory)[address];
 }
 
-void store_word(uint32_t address, uint32_t value) {
-  ((uint32_t *)glob->memory)[address]     = value & 0xFF;
-  ((uint32_t *)glob->memory)[address + 1] = (value >> 8) & 0xFF;
-  ((uint32_t *)glob->memory)[address + 2] = (value >> 16) & 0xFF;
-  ((uint32_t *)glob->memory)[address + 3] = (value >> 24) & 0xFF;
+uint32_t load_half(uint32_t address)
+{
+  uint8_t *m = (uint8_t *)glob->memory;
+  return m[address] | (m[address + 1] << 8);
+}
+
+uint32_t load_word(uint32_t address)
+{
+  uint8_t *m = (uint8_t *)glob->memory;
+  return m[address] | (m[address + 1] << 8) | (m[address + 2] << 16)
+      | (m[address + 3] << 24);
+}
+
+void store_byte(uint32_t address, uint32_t value)
+{
+  ((uint8_t *)glob->memory)[address] = value & 0xFF;
+}
+
+void store_half(uint32_t address, uint32_t value)
+{
+  uint8_t *m = (uint8_t *)glob->memory;
+  m[address] = value & 0xFF;
+  m[address + 1] = (value >> 8) & 0xFF;
+}
+
+void store_word(uint32_t address, uint32_t value)
+{
+  uint8_t *m = (uint8_t *)glob->memory;
+  m[address] = value & 0xFF;
+  m[address + 1] = (value >> 8) & 0xFF;
+  m[address + 2] = (value >> 16) & 0xFF;
+  m[address + 3] = (value >> 24) & 0xFF;
 }

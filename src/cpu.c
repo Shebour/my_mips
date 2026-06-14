@@ -9,9 +9,27 @@
 
 extern struct global *glob;
 
+/* Branch-delay pipeline: a taken branch/jump records its target here and
+ * still lets the delay-slot instruction execute. The transfer is applied
+ * one instruction later, in execute(). */
+static int branch_pending = 0;
+static uint32_t branch_target = 0;
+
 void pc_step(int step)
 {
   glob->pc += step;
+}
+
+static void schedule_branch(uint32_t target)
+{
+  branch_pending = 1;
+  branch_target = target;
+}
+
+/* Branch offset is signed and relative to the delay slot (pc + 4). */
+static uint32_t branch_dest(uint16_t imm)
+{
+  return glob->pc + 4 + ((int16_t)imm << 2);
 }
 
 int exec_register(uint32_t *instruction)
@@ -25,11 +43,6 @@ int exec_register(uint32_t *instruction)
   if (glob->log)
   {
     log_instr(instruction, __FILENAME__, __LINE__);
-  }
-  if (rd == 0x0 && function != JR && function != JALR && function != MULT && function != MULTU && function != DIV && function != DIVU)
-  {
-    LOG_ERROR("You cannot override R0");
-    return 1;
   }
   switch (function)
   {
@@ -78,15 +91,11 @@ int exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case SRA:
-    glob->reg[rt] >>= sa;
-    glob->reg[rd] = glob->reg[rt];
+    glob->reg[rd] = (int32_t)glob->reg[rt] >> sa;
     pc_step(4);
     break;
   case SRAV:
-    rs <<= 3;
-    rs >>= 3;
-    glob->reg[rt] >>= rs;
-    glob->reg[rd] = glob->reg[rt];
+    glob->reg[rd] = (int32_t)glob->reg[rt] >> (glob->reg[rs] & 0x1F);
     pc_step(4);
     break;
   case SRL:
@@ -118,11 +127,13 @@ int exec_register(uint32_t *instruction)
     pc_step(4);
     break;
   case JALR:
-    glob->reg[rd] = glob->pc + 4;
-    glob->pc = glob->reg[rs];
+    glob->reg[rd] = glob->pc + 8;
+    schedule_branch(glob->reg[rs]);
+    pc_step(4);
     break;
   case JR:
-    glob->pc = glob->reg[rs];
+    schedule_branch(glob->reg[rs]);
+    pc_step(4);
     break;
   case MFHI:
     glob->reg[rd] = glob->hi;
@@ -143,6 +154,7 @@ int exec_register(uint32_t *instruction)
   default:
     return 1;
   }
+  glob->reg[R0] = 0;
   return 0;
 }
 
@@ -159,11 +171,11 @@ int exec_immediate(uint32_t *instruction)
   switch (opcode)
   {
   case ADDI:
-    addi(rs, imm, rt);
+    addi(rs, (int16_t)imm, rt);
     pc_step(4);
     break;
   case ADDIU:
-    addiu(rs, imm, rt);
+    addiu(rs, (int16_t)imm, rt);
     pc_step(4);
     break;
   case ANDI:
@@ -179,81 +191,141 @@ int exec_immediate(uint32_t *instruction)
     pc_step(4);
     break;
   case SLTI:
-    slti(rs, imm, rt);
+    slti(rs, (int16_t)imm, rt);
     pc_step(4);
     break;
   case SLTIU:
-    sltiu(rs, imm, rt);
+    sltiu(rs, (uint32_t)(int16_t)imm, rt);
     pc_step(4);
     break;
   case BEQ:
     if (glob->reg[rs] == glob->reg[rt])
-      glob->pc += (imm << 2);
-    break;
-  case BGEZ:
-    if ((int32_t)glob->reg[rs] >= 0)
-      glob->pc += (imm << 2);
-    break;
-  case BGEZAL:
-    glob->reg[RA] = glob->pc + 4;
-    if ((int32_t)glob->reg[rs] >= 0)
-      glob->pc += (imm << 2);
-    break;
-  case BGTZ:
-    if ((int32_t)glob->reg[rs] > 0)
-      glob->pc += (imm << 2);
-    break;
-  case BLEZ:
-    if ((int32_t)glob->reg[rs] <= 0)
-      glob->pc += (imm << 2);
-    break;
-  case BLTZ:
-    if ((int32_t)glob->reg[rs] < 0)
-      glob->pc += (imm << 2);
-    break;
-  case BLTZAL:
-    glob->reg[RA] = glob->pc + 4;
-    if ((int32_t)glob->reg[rs] < 0)
-      glob->pc += (imm << 2);
+      schedule_branch(branch_dest(imm));
+    pc_step(4);
     break;
   case BNE:
     if (glob->reg[rs] != glob->reg[rt])
-      glob->pc += (imm << 2);
+      schedule_branch(branch_dest(imm));
+    pc_step(4);
     break;
+  case BGTZ:
+    if ((int32_t)glob->reg[rs] > 0)
+      schedule_branch(branch_dest(imm));
+    pc_step(4);
+    break;
+  case BLEZ:
+    if ((int32_t)glob->reg[rs] <= 0)
+      schedule_branch(branch_dest(imm));
+    pc_step(4);
+    break;
+  /* REGIMM (opcode 0x01): bltz / bgez / bltzal / bgezal selected by rt. */
+  case BGEZ:
+    {
+      int negative = (int32_t)glob->reg[rs] < 0;
+      int take = (rt == BGEZ || rt == BGEZAL) ? !negative : negative;
+      if (rt == BGEZAL || rt == BLTZAL)
+        glob->reg[RA] = glob->pc + 8;
+      if (take)
+        schedule_branch(branch_dest(imm));
+      pc_step(4);
+      break;
+    }
   case LB:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      glob->reg[rt] = (int32_t)(int8_t)load_byte(addr);
+      pc_step(4);
+      break;
+    }
   case LBU:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      glob->reg[rt] = load_byte(addr);
+      pc_step(4);
+      break;
+    }
   case LH:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      glob->reg[rt] = (int32_t)(int16_t)load_half(addr);
+      pc_step(4);
+      break;
+    }
   case LHU:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      glob->reg[rt] = load_half(addr);
+      pc_step(4);
+      break;
+    }
   case LW:
     {
-      uint32_t addr = (glob->reg[rs] + imm) / 4;
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
       glob->reg[rt] = load_word(addr);
       pc_step(4);
       break;
     }
   case LWL:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      uint32_t w = load_word(addr & ~3u);
+      uint32_t shift = 24 - 8 * (addr & 3u);
+      glob->reg[rt] = (w << shift) | (glob->reg[rt] & ((1u << shift) - 1));
+      pc_step(4);
+      break;
+    }
   case LWR:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      uint32_t w = load_word(addr & ~3u);
+      uint32_t shift = 8 * (addr & 3u);
+      glob->reg[rt] = (w >> shift) | (glob->reg[rt] & ~(0xFFFFFFFFu >> shift));
+      pc_step(4);
+      break;
+    }
   case SB:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      store_byte(addr, glob->reg[rt]);
+      pc_step(4);
+      break;
+    }
   case SH:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      store_half(addr, glob->reg[rt]);
+      pc_step(4);
+      break;
+    }
   case SW:
     {
-      uint32_t addr = (glob->reg[rs] + imm) / 4;
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
       store_word(addr, glob->reg[rt]);
       pc_step(4);
       break;
     }
   case SWL:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      uint32_t aligned = addr & ~3u;
+      uint32_t w = load_word(aligned);
+      uint32_t shift = 24 - 8 * (addr & 3u);
+      store_word(aligned,
+                 (glob->reg[rt] >> shift) | (w & ~(0xFFFFFFFFu >> shift)));
+      pc_step(4);
+      break;
+    }
   case SWR:
-    break;
+    {
+      uint32_t addr = glob->reg[rs] + (int16_t)imm;
+      uint32_t aligned = addr & ~3u;
+      uint32_t w = load_word(aligned);
+      uint32_t shift = 8 * (addr & 3u);
+      store_word(aligned,
+                 (glob->reg[rt] << shift) | (w & ((1u << shift) - 1)));
+      pc_step(4);
+      break;
+    }
   case LUI:
     glob->reg[rt] = imm << 16;
     pc_step(4);
@@ -261,6 +333,7 @@ int exec_immediate(uint32_t *instruction)
   default:
     return 1;
   }
+  glob->reg[R0] = 0;
   return 0;
 }
 int exec_jump(uint32_t *instruction)
@@ -271,16 +344,17 @@ int exec_jump(uint32_t *instruction)
   {
     log_instr(instruction, __FILENAME__, __LINE__);
   }
+  uint32_t target = (glob->pc & 0xF0000000) | (rs << 2);
   switch (opcode)
   {
   case J:
-    glob->pc = (glob->pc & 0xF0000000) | (rs << 2);
+    schedule_branch(target);
+    pc_step(4);
     break;
   case JAL:
-    glob->reg[RA] = glob->pc + 4;
-    glob->pc = (glob->pc & 0xF0000000) | (rs << 2);
-    break;
-  case TRAP:
+    glob->reg[RA] = glob->pc + 8;
+    schedule_branch(target);
+    pc_step(4);
     break;
   default:
     return 1;
@@ -288,82 +362,43 @@ int exec_jump(uint32_t *instruction)
   return 0;
 }
 
-int instruction_type(uint32_t *instruction)
-{
-  uint8_t opcode = (*instruction) >> 26;
-  uint32_t function = (*instruction) << 26;
-  function = function >> 26;
-  if (opcode == J || opcode == JAL)
-    return JUMP;
-  if (opcode == BEQ || opcode == BNE || opcode == BGTZ || opcode == BLEZ)
-    return IMM;
-  if (opcode == 0)
-  {
-    if (function == JR || function == JALR)
-      return REG;
-  }
-  return 0;
-}
-
 int exec_inst(uint32_t *instru)
 {
-  if (*instru == 0 || *instru == 0xa)
+  uint8_t opcode = (*instru) >> 26;
+  uint8_t function = (*instru) & 0x3F;
+
+  if (*instru == 0) /* nop */
   {
     pc_step(4);
     return 0;
   }
-  int inst_type = instruction_type(instru);
-  if (inst_type)
+  if (opcode == 0 && function == SYSCALL)
   {
-    uint32_t *next_instru = ((uint32_t *)glob->memory) + (glob->pc + 4) / 4;
-    exec_inst(next_instru);
-    switch (inst_type)
-    {
-    case JUMP:
-      if (exec_jump(instru))
-        return 1;
-      break;
-    case IMM:
-      if (exec_immediate(instru))
-        return 1;
-      break;
-    case REG:
-      if (exec_register(instru))
-        return 1;
-      break;
-    default:
-      return 1;
-    }
-    return 0;
-  }
-  if (*instru == 0xc)
-  {
+    if (glob->log)
+      log_instr(instru, __FILENAME__, __LINE__);
     if (call_syscall())
-      return 2;
+      return 2; /* exit / exit2: stop cleanly */
     pc_step(4);
     return 0;
+  }
+  if (opcode == 0 && function == BREAK)
+  {
+    if (glob->log)
+      log_instr(instru, __FILENAME__, __LINE__);
+    glob->reg[K0] = 1; /* signal the trap, then stop */
+    return 2;
   }
 
-  uint8_t opcode = (*instru) >> 26;
   switch (opcode)
   {
   case 0:
-    if (exec_register(instru))
-      return 1;
-    break;
+    return exec_register(instru);
   case J:
   case JAL:
-  case TRAP:
-    if(exec_jump(instru))
-      return 1;
-    break;
+    return exec_jump(instru);
   default:
-    if (exec_immediate(instru))
-      return 1;
-    break;
+    return exec_immediate(instru);
   }
-
-  return 0;
 }
 
 int execute(void)
@@ -371,8 +406,20 @@ int execute(void)
   while (1)
   {
     uint32_t *instru = ((uint32_t *)glob->memory) + (glob->pc / 4);
+
+    /* A branch scheduled by the previous instruction takes effect now,
+     * after its delay slot (the current instruction) has run. */
+    int take = branch_pending;
+    uint32_t target = branch_target;
+    branch_pending = 0;
+
     int ret = exec_inst(instru);
-    if (ret)
-      return ret;
+    if (ret == 1)
+      return 1; /* decode/execution error */
+    if (ret == 2)
+      return 0; /* clean stop (exit / break) */
+
+    if (take)
+      glob->pc = target;
   }
 }

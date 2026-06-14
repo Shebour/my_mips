@@ -267,7 +267,8 @@ void log_imm_instr(uint32_t *instru, char *filename, int line)
     break;
   case SW:
     fprintf(stderr, "sw r%d, %x(r%d)", rt, imm, rs);
-    fprintf(stderr, " | sw %x = %x", ((uint32_t*)glob->memory) + ((glob->reg[rs] + imm) / 4), glob->reg[rt]);
+    fprintf(stderr, " | sw [%x] = %x", glob->reg[rs] + (int16_t)imm,
+            glob->reg[rt]);
     break;
   case SWL:
     fprintf(stderr, "swl r%d, %x", rt, imm);

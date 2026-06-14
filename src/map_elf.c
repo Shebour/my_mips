@@ -50,8 +50,7 @@ int map_elf(int fd)
   {
     if (glob->prg_header[i].p_type == PT_LOAD)
     {
-      Elf32_Phdr prg_header = glob->prg_header[i];
-
+      /* TODO: copy this PT_LOAD segment into emulated memory. */
     }
   }
   close(fd);

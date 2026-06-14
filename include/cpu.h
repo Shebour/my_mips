@@ -38,6 +38,8 @@ enum inst_type
 #define MFLO 0x12
 #define MTHI 0x11
 #define MTLO 0x13
+#define SYSCALL 0xc
+#define BREAK 0xd
 
 // Immediate encoding
 #define ADDI 0x8
@@ -76,6 +78,5 @@ enum inst_type
 
 int execute();
 int exec_inst(uint32_t *instru);
-int instruction_type(uint32_t *instruction);
 
 #endif /* CPU_H */
