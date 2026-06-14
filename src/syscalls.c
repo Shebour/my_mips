@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "logger.h"
 #include "utils.h"
 
 extern struct global *glob;
@@ -57,7 +58,10 @@ void read_char(void)
 
 void _open(void)
 {
-  glob->reg[V0] = open((char *)glob->memory + glob->reg[A0], glob->reg[A1]);
+  const char *path = (char *)glob->memory + glob->reg[A0];
+  /* Subject convention: $a1 is 0 for read, 1 for write. */
+  int flags = glob->reg[A1] == 0 ? O_RDONLY : (O_WRONLY | O_CREAT | O_TRUNC);
+  glob->reg[V0] = open(path, flags, 0644);
 }
 
 void _read(void)
@@ -114,8 +118,11 @@ int call_syscall(void)
   case 16:
     _close();
     break;
-  case 17:
-    return glob->reg[A0];
+  case 17: /* exit2: always halts, the code in $a0 is the exit status */
+    return 1;
+  default:
+    LOG_ERROR("Unknown syscall number: %u", syscall_value);
+    return 1;
   }
   return 0;
 }

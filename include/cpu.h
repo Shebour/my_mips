@@ -24,7 +24,7 @@ enum inst_type
 #define NOR 0x27
 #define OR 0x25
 #define SLT 0x2a
-#define SLTU 0x29
+#define SLTU 0x2b
 #define XOR 0x26
 #define SLL 0x0
 #define SLLV 0x4

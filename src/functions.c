@@ -1,17 +1,11 @@
 #include "functions.h"
 
-#include <inttypes.h>
-#include <stdio.h>
-
 #include "utils.h"
 
 extern struct global *glob;
 
-void trap(void)
-{
-  glob->reg[K0] = 1;
-}
-
+/* On signed overflow the subject asks us to write 1 to $k0 instead of
+ * raising a real trap (and 0 when no overflow); rd is left unchanged. */
 void add(uint32_t rs, uint32_t rt, uint32_t rd)
 {
   int32_t rs_val = glob->reg[rs];
@@ -19,11 +13,11 @@ void add(uint32_t rs, uint32_t rt, uint32_t rd)
   int32_t res = 0;
   if (__builtin_add_overflow(rs_val, rt_val, &res))
   {
-    fprintf(stderr, "[my_mips] Overflow occurred!\n");
-    clean_exit();
+    glob->reg[K0] = 1;
   }
   else
   {
+    glob->reg[K0] = 0;
     glob->reg[rd] = res;
   }
 }
@@ -42,11 +36,11 @@ void sub(uint32_t rs, uint32_t rt, uint32_t rd)
   int32_t res = 0;
   if (__builtin_sub_overflow(rs_val, rt_val, &res))
   {
-    fprintf(stderr, "[my_mips] Overflow occurred!\n");
-    clean_exit();
+    glob->reg[K0] = 1;
   }
   else
   {
+    glob->reg[K0] = 0;
     glob->reg[rd] = res;
   }
 }
@@ -123,11 +117,11 @@ void addi(uint32_t rs, int32_t imm, uint32_t rt)
   int32_t res = 0;
   if (__builtin_add_overflow(rs_val, imm, &res))
   {
-    fprintf(stderr, "[my_mips] Overflow occurred!\n");
-    clean_exit();
+    glob->reg[K0] = 1;
   }
   else
   {
+    glob->reg[K0] = 0;
     glob->reg[rt] = res;
   }
 }

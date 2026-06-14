@@ -2,6 +2,7 @@ CC=gcc
 CFLAGS= -std=c99 -Wall -Wextra -pedantic
 TARGET= my_mips
 BUILD_DIR= build/bin
+COV_DIR= build/coverage
 DEBUG_DIR= build/debug
 ASAN_DIR= build/asan
 C_SOURCES= src/main.c \
@@ -23,6 +24,7 @@ C_SOURCES= src/main.c \
 C_INCLUDES= -Iinclude
 LDLIBS= -lreadline
 OBJECTS=$(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
+OBJECTS_COV=$(addprefix $(COV_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_DEBUG=$(addprefix $(DEBUG_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 OBJECTS_ASAN=$(addprefix $(ASAN_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
@@ -30,7 +32,7 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 
 .PHONY: clean test release debug coverage asan
 
-all: release debug test asan
+all: clean release debug test asan coverage
 
 release: $(BUILD_DIR)/$(TARGET)
 
@@ -43,13 +45,19 @@ asan: $(ASAN_DIR)/$(TARGET)
 
 coverage: CFLAGS += --coverage
 coverage: LDLIBS += --coverage
-coverage: clean release
+coverage: $(COV_DIR)/$(TARGET)
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS) Makefile
 	$(CC) $(OBJECTS) -o $@ $(LDLIBS)
+
+$(COV_DIR)/%.o: %.c Makefile | $(COV_DIR)
+	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
+
+$(COV_DIR)/$(TARGET): $(OBJECTS_COV) Makefile
+	$(CC) $(OBJECTS_COV) -o $@ $(LDLIBS)
 
 $(DEBUG_DIR)/%.o: %.c Makefile | $(DEBUG_DIR)
 	$(CC) $(CFLAGS) $(C_INCLUDES) -c $< -o $@
@@ -65,6 +73,9 @@ $(ASAN_DIR)/$(TARGET): $(OBJECTS_ASAN) Makefile
 
 
 $(BUILD_DIR):
+	@mkdir -p $@
+
+$(COV_DIR):
 	@mkdir -p $@
 
 $(DEBUG_DIR):

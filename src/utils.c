@@ -105,7 +105,8 @@ int binary_or_elf(char *path)
       LOG_ERROR("Cannot read program header");
       return -1;
     }
-    LOG_INFO("Executing ELF32 file");
+    if (glob->log)
+      LOG_INFO("Executing ELF32 file");
     glob->elf = 1;
     glob->elf_header = elf_header;
     glob->prg_header = prg_header;
