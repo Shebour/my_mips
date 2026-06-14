@@ -39,7 +39,20 @@ Done (was bonus / latent bugs)
     open(2) flags (O_CREAT|O_TRUNC for write); open/read/write/close
     verified by a round-trip test.
 
-Bonus (optional)
-----------------
-[ ] Integrated debugger improvements (src/dbg.c, -d flag).
-[ ] GDB remote stub, JIT compilation, FPU/COP1 instructions.
+Bonus roadmap (easiest -> hardest)
+----------------------------------
+[ ] 1. MIPS32: extend the existing R/I/J dispatch with the MIPS32
+       additions (mul, madd/maddu, msub/msubu, clz/clo, movz/movn).
+       No new CPU state, testable with .s programs.   <-- IN PROGRESS
+[ ] 2. Improve the integrated debugger (src/dbg.c, -d flag): more
+       commands (breakpoints, memory/register examine, step N,
+       disassemble) and a breakpoint hook in execute(). Builds on the
+       existing cstream / readline scaffolding; local, no networking.
+[ ] 3. FPU / COP1: new f0-f31 register file + FCSR, a COP1 decode path,
+       arithmetic / moves / loads-stores / compares-branches /
+       conversions. Mechanical but high-volume.
+[ ] 4. Game system: MMIO framebuffer, a graphics library, input and an
+       event loop, plus demo MIPS programs. Open-ended.
+
+(GDB remote stub and JIT compilation dropped in favour of improving the
+existing debugger.)

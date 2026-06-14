@@ -216,6 +216,13 @@
       "input": null,
       "expected_stdout": "Hello",
       "expected_stderr": ""
+    },
+    {
+      "name": "MIPS32 (mul/movz/movn/clz/clo/madd/msub/maddu/msubu)",
+      "param": "test/mips32.exe",
+      "input": null,
+      "expected_stdout": "42\n99\n77\n22\n8\n12\n12\n2\n100\n60\n",
+      "expected_stderr": ""
     }
   ]
 }

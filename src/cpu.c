@@ -151,6 +151,16 @@ int exec_register(uint32_t *instruction)
     glob->lo = glob->reg[rs];
     pc_step(4);
     break;
+  case MOVZ: /* MIPS32: move rd <- rs if rt == 0 */
+    if (glob->reg[rt] == 0)
+      glob->reg[rd] = glob->reg[rs];
+    pc_step(4);
+    break;
+  case MOVN: /* MIPS32: move rd <- rs if rt != 0 */
+    if (glob->reg[rt] != 0)
+      glob->reg[rd] = glob->reg[rs];
+    pc_step(4);
+    break;
   default:
     return 1;
   }
@@ -362,6 +372,84 @@ int exec_jump(uint32_t *instruction)
   return 0;
 }
 
+/* MIPS32 SPECIAL2 group (opcode 0x1c): mul, madd/u, msub/u, clz, clo. */
+int exec_special2(uint32_t *instruction)
+{
+  uint8_t function = (*instruction) & 0x3F;
+  uint8_t rs = ((*instruction) >> 21) & 0x1F;
+  uint8_t rt = ((*instruction) >> 16) & 0x1F;
+  uint8_t rd = ((*instruction) >> 11) & 0x1F;
+  if (glob->log)
+    log_instr(instruction, __FILENAME__, __LINE__);
+  switch (function)
+  {
+  case MUL:
+    glob->reg[rd] = (int32_t)glob->reg[rs] * (int32_t)glob->reg[rt];
+    break;
+  case MADD:
+  {
+    int64_t acc = ((int64_t)(int32_t)glob->hi << 32) | (uint32_t)glob->lo;
+    acc += (int64_t)(int32_t)glob->reg[rs] * (int32_t)glob->reg[rt];
+    glob->hi = (uint32_t)(acc >> 32);
+    glob->lo = (uint32_t)acc;
+    break;
+  }
+  case MADDU:
+  {
+    uint64_t acc = ((uint64_t)glob->hi << 32) | glob->lo;
+    acc += (uint64_t)glob->reg[rs] * glob->reg[rt];
+    glob->hi = (uint32_t)(acc >> 32);
+    glob->lo = (uint32_t)acc;
+    break;
+  }
+  case MSUB:
+  {
+    int64_t acc = ((int64_t)(int32_t)glob->hi << 32) | (uint32_t)glob->lo;
+    acc -= (int64_t)(int32_t)glob->reg[rs] * (int32_t)glob->reg[rt];
+    glob->hi = (uint32_t)(acc >> 32);
+    glob->lo = (uint32_t)acc;
+    break;
+  }
+  case MSUBU:
+  {
+    uint64_t acc = ((uint64_t)glob->hi << 32) | glob->lo;
+    acc -= (uint64_t)glob->reg[rs] * glob->reg[rt];
+    glob->hi = (uint32_t)(acc >> 32);
+    glob->lo = (uint32_t)acc;
+    break;
+  }
+  case CLZ:
+  {
+    uint32_t v = glob->reg[rs];
+    uint32_t n = 0;
+    while (n < 32 && !(v & 0x80000000u))
+    {
+      n++;
+      v <<= 1;
+    }
+    glob->reg[rd] = n;
+    break;
+  }
+  case CLO:
+  {
+    uint32_t v = glob->reg[rs];
+    uint32_t n = 0;
+    while (n < 32 && (v & 0x80000000u))
+    {
+      n++;
+      v <<= 1;
+    }
+    glob->reg[rd] = n;
+    break;
+  }
+  default:
+    return 1;
+  }
+  glob->reg[R0] = 0;
+  pc_step(4);
+  return 0;
+}
+
 int exec_inst(uint32_t *instru)
 {
   uint8_t opcode = (*instru) >> 26;
@@ -393,6 +481,8 @@ int exec_inst(uint32_t *instru)
   {
   case 0:
     return exec_register(instru);
+  case SPECIAL2:
+    return exec_special2(instru);
   case J:
   case JAL:
     return exec_jump(instru);

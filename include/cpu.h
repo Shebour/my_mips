@@ -40,6 +40,18 @@ enum inst_type
 #define MTLO 0x13
 #define SYSCALL 0xc
 #define BREAK 0xd
+#define MOVZ 0xa
+#define MOVN 0xb
+
+// MIPS32 SPECIAL2 (opcode 0x1c) function codes
+#define SPECIAL2 0x1c
+#define MADD 0x0
+#define MADDU 0x1
+#define MUL 0x2
+#define MSUB 0x4
+#define MSUBU 0x5
+#define CLZ 0x20
+#define CLO 0x21
 
 // Immediate encoding
 #define ADDI 0x8
@@ -78,5 +90,6 @@ enum inst_type
 
 int execute();
 int exec_inst(uint32_t *instru);
+int exec_special2(uint32_t *instruction);
 
 #endif /* CPU_H */
