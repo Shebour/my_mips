@@ -27,6 +27,7 @@ struct global
   size_t code_size;
   int debug;
   int log;
+  int jit;
   int elf;
   void *elf_file;
   Elf32_Ehdr elf_header;

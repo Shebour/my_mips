@@ -8,6 +8,7 @@
 void pc_step(int step);
 void schedule_branch(uint32_t target);
 uint32_t branch_dest(uint32_t i);
+int branch_is_pending(void);
 int execute(void);
 int step_instruction(void);
 int exec_inst(uint32_t *instru);

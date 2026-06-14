@@ -11,6 +11,7 @@ C_SOURCES= src/main.c \
 					 src/syscalls.c \
 					 src/cpu.c \
 					 src/fpu.c \
+					 src/jit.c \
 					 src/device.c \
 					 src/disasm.c \
 					 src/logger.c \

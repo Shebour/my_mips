@@ -25,6 +25,14 @@ void schedule_branch(uint32_t target)
   branch_target = target;
 }
 
+/* True while a branch is waiting for its delay slot to run. The JIT consults
+ * this so it routes delay slots through the interpreter (which applies the
+ * branch), and only compiles blocks when no transfer is pending. */
+int branch_is_pending(void)
+{
+  return branch_pending;
+}
+
 /* Target of a taken branch: signed offset relative to the delay slot. */
 uint32_t branch_dest(uint32_t i)
 {

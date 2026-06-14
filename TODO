@@ -73,5 +73,13 @@ Bonus roadmap (easiest -> hardest)
        and SDL is initialised lazily so non-graphical programs open no
        window). Demo: test/game.s (a movable block, w/a/s/d to move).
 
-(GDB remote stub and JIT compilation dropped in favour of improving the
-existing debugger.)
+Extra
+-----
+[x] JIT compilation (src/jit.c, -j flag): a basic-block JIT to x86-64.
+    Runs of simple ALU instructions are compiled to native code in an
+    executable buffer and cached per guest PC; branches, memory, mult/div,
+    traps, syscalls and FP fall back to the interpreter (which keeps delay
+    slots correct). Verified byte-identical to the interpreter across the
+    suite; ~3x faster on an arithmetic-heavy loop.
+
+(GDB remote stub dropped in favour of improving the existing debugger.)

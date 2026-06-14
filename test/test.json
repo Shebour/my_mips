@@ -5,7 +5,7 @@
       "param": null,
       "input": null,
       "expected_stdout": "",
-      "expected_stderr": "Usage: {binary_name} [-l] [-d] <path to MIPS executable>\n"
+      "expected_stderr": "Usage: {binary_name} [-l] [-d] [-j] <path to MIPS executable>\n"
     },
     {
       "name": "Add word",
@@ -230,6 +230,30 @@
       "input": null,
       "expected_stdout": "7\n12\n10\n1\n4\n12\n1\n3\n3\n4\n3\n1\n4\n1\n",
       "expected_stderr": ""
+    },
+    {
+      "name": "JIT matches interpreter on the C factorial",
+      "param": "test/c/my_program",
+      "flags": "-j",
+      "input": null,
+      "expected_stdout": "fact(6) = 720\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "JIT matches interpreter on MIPS32 ALU ops",
+      "param": "test/mips32.exe",
+      "flags": "-j",
+      "input": null,
+      "expected_stdout": "42\n99\n77\n22\n8\n12\n12\n2\n100\n60\n",
+      "expected_stderr": ""
+    },
+    {
+      "name": "JIT matches interpreter on logic/shift/set ops",
+      "param": "test/disasm_sampler.exe",
+      "flags": "-j",
+      "input": null,
+      "expected_stdout": "",
+      "expected_stderr": null
     },
     {
       "name": "Debugger: print / step / break",

@@ -10,6 +10,7 @@
 #include "cpu.h"
 #include "dbg.h"
 #include "define.h"
+#include "jit.h"
 #include "logger.h"
 #include "utils.h"
 
@@ -19,7 +20,8 @@ int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    fprintf(stderr, "Usage: %s [-l] [-d] <path to MIPS executable>\n", argv[0]);
+    fprintf(stderr, "Usage: %s [-l] [-d] [-j] <path to MIPS executable>\n",
+            argv[0]);
     return 1;
   }
 
@@ -34,7 +36,7 @@ int main(int argc, char **argv)
     clean_exit();
     return EXIT_SUCCESS;
   }
-  if (execute() == 1)
+  if ((glob->jit ? execute_jit() : execute()) == 1)
     LOG_ERROR("Error during execution");
 
   clean_exit();
